@@ -1,0 +1,427 @@
+// schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// --- ENUMS ---
+enum UserRole {
+  SUPER_ADMIN
+  COMPANY_ADMIN
+  MEMBER
+}
+
+enum CompanyStatus {
+  PENDING_VERIFICATION
+  ACTIVE
+  SUSPENDED
+}
+
+enum ListingStatus {
+  DRAFT
+  ACTIVE
+  RESERVED
+  BOOKED
+  EXPIRED
+}
+
+enum RequestStatus {
+  PENDING
+  NEGOTIATING
+  OFFER_SENT
+  ACCEPTED
+  IN_PROGRESS
+  REJECTED
+  CANCELLED
+  COMPLETED
+}
+
+enum SubscriptionTier {
+  FREE
+  BUYER
+  VENDOR
+}
+
+enum SubscriptionStatus {
+  INACTIVE
+  ACTIVE
+  PAST_DUE
+  CANCELLED
+}
+
+// --- PLATFORM SETTINGS ---
+
+model PlatformSettings {
+  id                    String   @id @default("default")
+  
+  // Beta Mode - When ON, subscription is not required
+  betaMode              Boolean  @default(true)
+  
+  // Founding Member Program
+  foundingMemberLimit   Int      @default(50)
+  foundingMemberFee     Int      @default(250)  // Discounted matchmaking fee for founders
+  foundingMemberDeals   Int      @default(3)    // Free deals for founding members
+  
+  // Pricing Configuration
+  subscriptionPrice     Int      @default(49)   // Monthly subscription (EUR)
+  matchmakingFee        Int      @default(500)  // One-time matchmaking fee (EUR)
+  
+  updatedAt             DateTime @updatedAt
+}
+
+// --- MODELS ---
+
+model User {
+  id            String    @id @default(uuid())
+  clerkId       String    @unique
+  email         String    @unique
+  fullName      String?
+  role          UserRole  @default(COMPANY_ADMIN)
+  avatarUrl     String?
+
+  companyId     String?
+  company       Company?  @relation(fields: [companyId], references: [id])
+
+  sentMessages     Message[]
+  notifications    Notification[]
+  uploadedFiles    File[]
+  termsAcceptances TermsAcceptance[]
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Company {
+  id               String        @id @default(uuid())
+  name             String
+  slug             String        @unique
+  registrationCode String        @unique
+  vatCode          String?
+  website          String?
+  description      String?
+  logoUrl          String?
+  status           CompanyStatus @default(PENDING_VERIFICATION)
+
+  // Subscription
+  subscriptionTier   SubscriptionTier   @default(FREE)
+  subscriptionStatus SubscriptionStatus @default(INACTIVE)
+  subscriptionEndsAt DateTime?
+  stripeCustomerId   String?
+  stripeSubscriptionId String?
+  
+  // Founding Member Program
+  isFoundingMember         Boolean @default(false)
+  foundingDealsRemaining   Int     @default(0)
+
+  // Contact Info (revealed after payment)
+  contactEmail  String?
+  contactPhone  String?
+
+  users       User[]
+  developers  Developer[]
+
+  // Deals
+  purchases   Request[] @relation("ClientCompany")
+  sales       Request[] @relation("VendorCompany")
+
+  // Ratings
+  ratingsGiven    Rating[] @relation("RatingFrom")
+  ratingsReceived Rating[] @relation("RatingTo")
+
+  createdAt   DateTime  @default(now())
+}
+
+model Developer {
+  id          String   @id @default(uuid())
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  // Internal Data (Private)
+  realName     String
+  email        String?
+  internalRate Decimal?
+
+  // Public Profile
+  pseudonym   String
+  title       String
+  level       String
+  bio         String?
+  photoUrl    String?
+  cvUrl       String?
+
+  skills      DeveloperSkill[]
+  listings    Listing[]
+
+  createdAt   DateTime @default(now())
+}
+
+model Skill {
+  id         String           @id @default(uuid())
+  name       String           @unique
+  developers DeveloperSkill[]
+}
+
+model DeveloperSkill {
+  developerId String
+  developer   Developer @relation(fields: [developerId], references: [id], onDelete: Cascade)
+  skillId     String
+  skill       Skill     @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  years       Int
+  isPrimary   Boolean   @default(false)
+
+  @@id([developerId, skillId])
+}
+
+model Listing {
+  id          String        @id @default(uuid())
+  developerId String
+  developer   Developer     @relation(fields: [developerId], references: [id], onDelete: Cascade)
+
+  // Availability Logic
+  availableFrom DateTime
+  availableTo   DateTime?
+  workType      String
+  timezone      String        @default("Europe/Vilnius")
+
+  // Commercials
+  hourlyRate  Decimal
+  currency    String        @default("EUR")
+  minDuration Int
+
+  status      ListingStatus @default(DRAFT)
+
+  requests    Request[]
+
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([status, availableFrom])
+}
+
+model Request {
+  id         String        @id @default(uuid())
+  listingId  String
+  listing    Listing       @relation(fields: [listingId], references: [id])
+
+  clientId   String
+  client     Company       @relation("ClientCompany", fields: [clientId], references: [id])
+
+  vendorId   String
+  vendor     Company       @relation("VendorCompany", fields: [vendorId], references: [id])
+
+  status     RequestStatus @default(PENDING)
+
+  // Deal details (Snapshot)
+  startDate  DateTime
+  endDate    DateTime
+  agreedRate Decimal?
+
+  conversation   Conversation?
+  contract       Contract?
+  timesheets     Timesheet[]
+  rating         Rating?
+  matchmakingFee MatchmakingFee?
+
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+}
+
+model Conversation {
+  id        String   @id @default(uuid())
+  requestId String   @unique
+  request   Request  @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  messages  Message[]
+
+  updatedAt DateTime @updatedAt
+}
+
+model Message {
+  id             String       @id @default(uuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String?      // Optional for system messages
+  sender         User?        @relation(fields: [senderId], references: [id])
+
+  content        String
+  isRead         Boolean      @default(false)
+
+  createdAt      DateTime     @default(now())
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  link      String?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model File {
+  id         String @id @default(uuid())
+  url        String
+  key        String
+  name       String
+  size       Int
+  uploaderId String
+  uploader   User   @relation(fields: [uploaderId], references: [id])
+}
+
+// --- VALUE CONTINUITY MODELS ---
+
+enum ContractStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum TimesheetStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+model Contract {
+  id           String         @id @default(uuid())
+  requestId    String         @unique
+  request      Request        @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  
+  // Contract terms
+  title        String
+  terms        String         @db.Text
+  hourlyRate   Decimal        @db.Decimal(10, 2)
+  currency     String         @default("EUR")
+  startDate    DateTime
+  endDate      DateTime?
+  
+  // Status tracking
+  status       ContractStatus @default(DRAFT)
+  sentAt       DateTime?
+  acceptedAt   DateTime?
+  
+  timesheets   Timesheet[]
+  invoices     Invoice[]
+  
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+}
+
+model Timesheet {
+  id          String          @id @default(uuid())
+  contractId  String?
+  contract    Contract?       @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  
+  // Also keep request relation for backward compatibility
+  requestId   String?
+  request     Request?        @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  
+  weekStart   DateTime
+  weekEnd     DateTime
+  totalHours  Decimal         @db.Decimal(5, 2)
+  
+  entries     TimesheetEntry[]
+  
+  status      TimesheetStatus @default(DRAFT)
+  submittedAt DateTime?
+  approvedAt  DateTime?
+  rejectedAt  DateTime?
+  rejectionReason String?
+  
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  
+  @@index([contractId, weekStart])
+}
+
+model TimesheetEntry {
+  id          String    @id @default(uuid())
+  timesheetId String
+  timesheet   Timesheet @relation(fields: [timesheetId], references: [id], onDelete: Cascade)
+  
+  date        DateTime
+  hours       Decimal   @db.Decimal(4, 2)
+  description String?
+  
+  createdAt   DateTime  @default(now())
+}
+
+model Invoice {
+  id           String        @id @default(uuid())
+  contractId   String
+  contract     Contract      @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  
+  // Invoice details
+  number       String        @unique
+  amount       Decimal       @db.Decimal(10, 2)
+  currency     String        @default("EUR")
+  periodStart  DateTime
+  periodEnd    DateTime
+  
+  // Line items stored as JSON
+  lineItems    Json?
+  
+  // Status
+  status       InvoiceStatus @default(DRAFT)
+  sentAt       DateTime?
+  paidAt       DateTime?
+  dueDate      DateTime?
+  
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  
+  @@index([contractId, status])
+}
+
+model Rating {
+  id            String   @id @default(uuid())
+  requestId     String   @unique
+  request       Request  @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  fromCompanyId String
+  fromCompany   Company  @relation("RatingFrom", fields: [fromCompanyId], references: [id])
+  toCompanyId   String
+  toCompany     Company  @relation("RatingTo", fields: [toCompanyId], references: [id])
+  score         Int      // 1-5
+  comment       String?
+  createdAt     DateTime @default(now())
+}
+
+model MatchmakingFee {
+  id         String    @id @default(uuid())
+  requestId  String    @unique
+  request    Request   @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  amount     Decimal   @default(500)
+  currency   String    @default("EUR")
+  status     String    @default("pending") // pending, paid, waived
+  invoiceUrl String?
+  createdAt  DateTime  @default(now())
+  paidAt     DateTime?
+}
+
+model TermsAcceptance {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  version    String
+  acceptedAt DateTime @default(now())
+  ipAddress  String?
+}
+
