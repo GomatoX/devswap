@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -28,6 +28,8 @@ import { FileUploadButton } from "@/components/file-upload";
 import { Plus, X, User, FileText, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { createDeveloper, updateDeveloper } from "./actions";
+import { getAllCountries, PRIORITY_COUNTRIES } from "@/lib/constants/countries";
+import { getAllLanguages, PRIORITY_LANGUAGES } from "@/lib/constants/languages";
 
 const popularSkills = [
   "React",
@@ -63,6 +65,8 @@ type Developer = {
   bio: string | null;
   photoUrl: string | null;
   cvUrl: string | null;
+  country: string | null;
+  languages: string[];
   skills: Array<{
     skill: { name: string };
     years: number;
@@ -100,6 +104,8 @@ export function DeveloperFormDialog({
     bio: developer?.bio || "",
     photoUrl: developer?.photoUrl || "",
     cvUrl: developer?.cvUrl || "",
+    country: developer?.country || "",
+    languages: developer?.languages || ([] as string[]),
   });
   const [skills, setSkills] = useState<SkillInput[]>(
     developer?.skills.map((s) => ({
@@ -109,6 +115,22 @@ export function DeveloperFormDialog({
     })) || [],
   );
   const [newSkill, setNewSkill] = useState({ name: "", years: 1 });
+
+  // Get sorted countries with priority countries first
+  const countries = useMemo(() => {
+    const all = getAllCountries();
+    const priority = all.filter((c) => PRIORITY_COUNTRIES.includes(c.code));
+    const rest = all.filter((c) => !PRIORITY_COUNTRIES.includes(c.code));
+    return [...priority, ...rest];
+  }, []);
+
+  // Get sorted languages with priority languages first
+  const languages = useMemo(() => {
+    const all = getAllLanguages();
+    const priority = all.filter((l) => PRIORITY_LANGUAGES.includes(l.code));
+    const rest = all.filter((l) => !PRIORITY_LANGUAGES.includes(l.code));
+    return [...priority, ...rest];
+  }, []);
 
   // Reset form when dialog opens/closes
   const handleOpenChange = (newOpen: boolean) => {
@@ -121,6 +143,8 @@ export function DeveloperFormDialog({
         bio: developer.bio || "",
         photoUrl: developer.photoUrl || "",
         cvUrl: developer.cvUrl || "",
+        country: developer.country || "",
+        languages: developer.languages || [],
       });
       setSkills(
         developer.skills.map((s) => ({
@@ -138,6 +162,8 @@ export function DeveloperFormDialog({
         bio: "",
         photoUrl: "",
         cvUrl: "",
+        country: "",
+        languages: [],
       });
       setSkills([]);
     }
@@ -189,6 +215,8 @@ export function DeveloperFormDialog({
       bio: formData.bio || undefined,
       photoUrl: formData.photoUrl || undefined,
       cvUrl: formData.cvUrl || undefined,
+      country: formData.country || undefined,
+      languages: formData.languages.length > 0 ? formData.languages : undefined,
       skills: skills.length > 0 ? skills : undefined,
     };
 
@@ -368,6 +396,79 @@ export function DeveloperFormDialog({
                 }}
               />
             )}
+          </div>
+        </div>
+
+        {/* Country and Languages */}
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="country">Country</Label>
+            <Select
+              value={formData.country}
+              onValueChange={(v) => setFormData({ ...formData, country: v })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select country" />
+              </SelectTrigger>
+              <SelectContent>
+                {countries.map((country) => (
+                  <SelectItem key={country.code} value={country.code}>
+                    {country.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Languages</Label>
+            <div className="flex flex-wrap gap-2 p-2 border rounded-lg min-h-[40px]">
+              {formData.languages.map((langCode) => {
+                const lang = languages.find((l) => l.code === langCode);
+                return (
+                  <Badge key={langCode} variant="secondary" className="gap-1">
+                    {lang?.name || langCode}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setFormData({
+                          ...formData,
+                          languages: formData.languages.filter(
+                            (l) => l !== langCode,
+                          ),
+                        })
+                      }
+                      className="ml-1 hover:text-destructive"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                );
+              })}
+            </div>
+            <Select
+              value=""
+              onValueChange={(v) => {
+                if (v && !formData.languages.includes(v)) {
+                  setFormData({
+                    ...formData,
+                    languages: [...formData.languages, v],
+                  });
+                }
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Add language..." />
+              </SelectTrigger>
+              <SelectContent>
+                {languages
+                  .filter((l) => !formData.languages.includes(l.code))
+                  .map((lang) => (
+                    <SelectItem key={lang.code} value={lang.code}>
+                      {lang.name}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 

@@ -16,6 +16,8 @@ const createDeveloperSchema = z.object({
   photoUrl: z.string().url().optional().or(z.literal("")),
   cvUrl: z.string().url().optional().or(z.literal("")),
   internalRate: z.number().optional(),
+  country: z.string().optional(),
+  languages: z.array(z.string()).optional(),
   skills: z
     .array(
       z.object({
@@ -155,6 +157,8 @@ export async function createDeveloper(input: CreateDeveloperInput) {
         photoUrl: validatedData.photoUrl || null,
         cvUrl: validatedData.cvUrl || null,
         internalRate: validatedData.internalRate || null,
+        country: validatedData.country || null,
+        languages: validatedData.languages || [],
       },
     });
 
@@ -219,6 +223,8 @@ export async function updateDeveloper(id: string, input: UpdateDeveloperInput) {
         photoUrl: validatedData.photoUrl || null,
         cvUrl: validatedData.cvUrl || null,
         internalRate: validatedData.internalRate || null,
+        country: validatedData.country || null,
+        languages: validatedData.languages,
       },
     });
 

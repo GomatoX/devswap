@@ -125,7 +125,13 @@ const statusConfig: Record<
   CANCELLED: { label: "Cancelled", color: "bg-gray-500", icon: XCircle },
 };
 
-export function RequestDetailClient({ request }: { request: RequestData }) {
+export function RequestDetailClient({
+  request,
+  matchmakingFee = 500,
+}: {
+  request: RequestData;
+  matchmakingFee?: number;
+}) {
   const router = useRouter();
   const [messageInput, setMessageInput] = useState("");
   const [sending, setSending] = useState(false);
@@ -577,7 +583,7 @@ export function RequestDetailClient({ request }: { request: RequestData }) {
                         setPendingAction({
                           status: "OFFER_SENT",
                           title: "Accept & Create Offer",
-                          description: `Create an offer for ${request.counterparty.name}. They will need to pay the matchmaking fee (€500) to finalize the deal and unlock your contact information.`,
+                          description: `Create an offer for ${request.counterparty.name}. They will need to pay the matchmaking fee (€${matchmakingFee}) to finalize the deal and unlock your contact information.`,
                           confirmLabel: "Send Offer",
                         })
                       }
@@ -650,7 +656,7 @@ export function RequestDetailClient({ request }: { request: RequestData }) {
                       ) : (
                         <>
                           <DollarSign className="h-4 w-4" />
-                          Finalize Deal (€500)
+                          Finalize Deal (€{matchmakingFee})
                         </>
                       )}
                     </Button>

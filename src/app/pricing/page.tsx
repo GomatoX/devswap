@@ -8,73 +8,84 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { getPlatformSettings } from "@/lib/platform-settings";
 
-const tiers = [
-  {
-    name: "Free",
-    price: "€0",
-    period: "/month",
-    description: "For companies looking to list their available resources",
-    features: [
-      { text: "Unlimited developer listings", included: true },
-      { text: "Public company profile", included: true },
-      { text: "Browse full marketplace", included: true },
-      { text: "Basic analytics dashboard", included: true },
-      { text: "Send engagement requests", included: false },
-      { text: "In-app messaging", included: false },
-      { text: "Priority placement in search", included: false },
-    ],
-    cta: "Get Started",
-    popular: false,
-  },
-  {
-    name: "Buyer",
-    price: "€49",
-    period: "/month",
-    description: "For companies actively seeking IT talent",
-    features: [
-      { text: "Everything in Free", included: true },
-      { text: "Send unlimited engagement requests", included: true },
-      { text: "In-app messaging & negotiations", included: true },
-      { text: "Advanced search filters", included: true },
-      { text: "Priority support", included: true },
-      { text: "Saved searches & alerts", included: true },
-      { text: "Export data & reports", included: true },
-    ],
-    cta: "Start 14-Day Free Trial",
-    popular: true,
-  },
-];
+function formatEUR(amount: number): string {
+  return `€${amount}`;
+}
 
-const faqs = [
-  {
-    question: "What is the Matchmaking Fee?",
-    answer:
-      "The matchmaking fee is a one-time €500 success fee charged when a contract is completed that exceeds 4 weeks of engagement. It's only charged to the hiring company upon successful completion of the engagement.",
-  },
-  {
-    question: "Can I list resources for free?",
-    answer:
-      "Yes! Listing your available developers is completely free. We want to build a robust marketplace, so there's no cost to showcase your bench resources.",
-  },
-  {
-    question: "What happens after the 14-day trial?",
-    answer:
-      "After your trial ends, you can continue using the Buyer tier for €49/month, or downgrade to the Free tier. All your data, conversations, and history will be preserved.",
-  },
-  {
-    question: "Is there a long-term contract?",
-    answer:
-      "No. Buyer subscriptions are billed monthly and can be cancelled anytime. The only contractual obligation is the non-circumvention clause in our Terms of Service.",
-  },
-  {
-    question: "What's included in the Replacement Guarantee?",
-    answer:
-      "If a developer engaged through DevSwap leaves or underperforms within the first 30 days, we'll help you find a replacement at no additional matchmaking fee.",
-  },
-];
+function getTiers(subscriptionPrice: number) {
+  return [
+    {
+      name: "Free",
+      price: "€0",
+      period: "/month",
+      description: "For companies looking to list their available resources",
+      features: [
+        { text: "Unlimited developer listings", included: true },
+        { text: "Public company profile", included: true },
+        { text: "Browse full marketplace", included: true },
+        { text: "Basic analytics dashboard", included: true },
+        { text: "Send engagement requests", included: false },
+        { text: "In-app messaging", included: false },
+        { text: "Priority placement in search", included: false },
+      ],
+      cta: "Get Started",
+      popular: false,
+    },
+    {
+      name: "Buyer",
+      price: formatEUR(subscriptionPrice),
+      period: "/month",
+      description: "For companies actively seeking IT talent",
+      features: [
+        { text: "Everything in Free", included: true },
+        { text: "Send unlimited engagement requests", included: true },
+        { text: "In-app messaging & negotiations", included: true },
+        { text: "Advanced search filters", included: true },
+        { text: "Priority support", included: true },
+        { text: "Saved searches & alerts", included: true },
+        { text: "Export data & reports", included: true },
+      ],
+      cta: "Start 14-Day Free Trial",
+      popular: true,
+    },
+  ];
+}
 
-export default function PricingPage() {
+function getFaqs(matchmakingFee: number) {
+  return [
+    {
+      question: "What is the Matchmaking Fee?",
+      answer: `The matchmaking fee is a one-time ${formatEUR(matchmakingFee)} success fee charged when a contract is completed that exceeds 4 weeks of engagement. It's only charged to the hiring company upon successful completion of the engagement.`,
+    },
+    {
+      question: "Can I list resources for free?",
+      answer:
+        "Yes! Listing your available developers is completely free. We want to build a robust marketplace, so there's no cost to showcase your bench resources.",
+    },
+    {
+      question: "What happens after the 14-day trial?",
+      answer:
+        "After your trial ends, you can continue using the Buyer tier for €49/month, or downgrade to the Free tier. All your data, conversations, and history will be preserved.",
+    },
+    {
+      question: "Is there a long-term contract?",
+      answer:
+        "No. Buyer subscriptions are billed monthly and can be cancelled anytime. The only contractual obligation is the non-circumvention clause in our Terms of Service.",
+    },
+    {
+      question: "What's included in the Replacement Guarantee?",
+      answer:
+        "If a developer engaged through DevSwap leaves or underperforms within the first 30 days, we'll help you find a replacement at no additional matchmaking fee.",
+    },
+  ];
+}
+
+export default async function PricingPage() {
+  const settings = await getPlatformSettings();
+  const tiers = getTiers(settings.subscriptionPrice);
+  const faqs = getFaqs(settings.matchmakingFee);
   return (
     <div className="min-h-screen">
       {/* Navigation */}
@@ -212,7 +223,9 @@ export default function PricingPage() {
                       🤝
                     </div>
                     <div>
-                      <CardTitle>Matchmaking Fee: €500</CardTitle>
+                      <CardTitle>
+                        Matchmaking Fee: {formatEUR(settings.matchmakingFee)}
+                      </CardTitle>
                       <CardDescription>
                         One-time success fee per completed engagement
                       </CardDescription>

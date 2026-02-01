@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
   Card,
@@ -16,9 +16,21 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { updateCompanyProfile } from "./actions";
+import {
+  getAllCountries,
+  PRIORITY_COUNTRIES,
+  getCountryName,
+} from "@/lib/constants/countries";
 
 type Company = {
   id: string;
@@ -30,6 +42,7 @@ type Company = {
   description: string | null;
   logoUrl: string | null;
   status: string;
+  country: string | null;
 };
 
 type SettingsClientProps = {
@@ -49,7 +62,16 @@ export function SettingsClient({
     vatCode: company?.vatCode || "",
     website: company?.website || "",
     description: company?.description || "",
+    country: company?.country || "",
   });
+
+  // Get sorted countries with priority countries first
+  const countries = useMemo(() => {
+    const all = getAllCountries();
+    const priority = all.filter((c) => PRIORITY_COUNTRIES.includes(c.code));
+    const rest = all.filter((c) => !PRIORITY_COUNTRIES.includes(c.code));
+    return [...priority, ...rest];
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,6 +83,7 @@ export function SettingsClient({
       vatCode: formData.vatCode || undefined,
       website: formData.website || undefined,
       description: formData.description,
+      country: formData.country || undefined,
     });
 
     if (result.success) {
@@ -194,6 +217,33 @@ export function SettingsClient({
                       placeholder="https://example.com"
                     />
                   </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="country">Country</Label>
+                  <Select
+                    value={formData.country}
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, country: value })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select country" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {countries.map((country, index) => (
+                        <SelectItem key={country.code} value={country.code}>
+                          {country.name}
+                          {index === PRIORITY_COUNTRIES.length - 1 && (
+                            <span className="sr-only">
+                              {" "}
+                              (end of priority countries)
+                            </span>
+                          )}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="space-y-2">

@@ -121,6 +121,9 @@ model Company {
   contactEmail  String?
   contactPhone  String?
 
+  // Location
+  country       String?   // ISO country code (e.g., "LT", "DE")
+
   users       User[]
   developers  Developer[]
 
@@ -152,6 +155,10 @@ model Developer {
   bio         String?
   photoUrl    String?
   cvUrl       String?
+
+  // Location & Languages
+  country     String?   // ISO country code
+  languages   String[]  // Language codes ["en", "lt", "de"]
 
   skills      DeveloperSkill[]
   listings    Listing[]

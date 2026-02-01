@@ -63,6 +63,8 @@ type Developer = {
   bio: string | null;
   photoUrl: string | null;
   cvUrl: string | null;
+  country: string | null;
+  languages: string[];
   skills: Array<{
     skill: { name: string };
     years: number;

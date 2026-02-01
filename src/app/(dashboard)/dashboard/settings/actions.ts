@@ -12,6 +12,7 @@ const updateCompanySchema = z.object({
   website: z.string().url("Invalid URL").optional().or(z.literal("")),
   description: z.string().min(10, "Description must be at least 10 characters"),
   logoUrl: z.string().optional(),
+  country: z.string().optional(),
 });
 
 export type UpdateCompanyInput = z.infer<typeof updateCompanySchema>;
@@ -78,6 +79,7 @@ export async function updateCompanyProfile(input: UpdateCompanyInput) {
         website: parsed.data.website || null,
         description: parsed.data.description,
         logoUrl: parsed.data.logoUrl || null,
+        country: parsed.data.country || null,
       },
     });
 
