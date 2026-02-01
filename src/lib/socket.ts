@@ -12,11 +12,31 @@ export type NextApiResponseWithSocket = NextApiResponse & {
 
 // Socket.io server configuration
 export const initSocketServer = (server: NetServer) => {
+  const allowedOrigin =
+    process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+
   const io = new SocketIOServer(server, {
     path: "/api/socket",
     addTrailingSlash: false,
     cors: {
-      origin: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+      origin: (origin, callback) => {
+        // Allow requests with no origin (like mobile apps or curl)
+        if (!origin) {
+          callback(null, true);
+          return;
+        }
+        // Allow if origin matches configured URL or localhost for dev
+        if (origin === allowedOrigin || origin.includes("localhost")) {
+          callback(null, true);
+          return;
+        }
+        // Allow same domain (production)
+        if (origin.includes("devswap.io")) {
+          callback(null, true);
+          return;
+        }
+        callback(new Error("Not allowed by CORS"));
+      },
       methods: ["GET", "POST"],
     },
   });

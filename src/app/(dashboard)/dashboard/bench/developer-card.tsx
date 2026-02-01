@@ -46,11 +46,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { MoreVertical, Edit, Trash2, Plus, User } from "lucide-react";
+import {
+  MoreVertical,
+  Edit,
+  Trash2,
+  Plus,
+  User,
+  Globe,
+  Languages,
+} from "lucide-react";
 import { toast } from "sonner";
 import { deleteDeveloper } from "./actions";
 import { createListing } from "../market/actions";
 import { DeveloperFormDialog } from "./developer-form-dialog";
+import { getCountryName } from "@/lib/constants/countries";
+import { getLanguageName } from "@/lib/constants/languages";
 
 const workTypes = ["Full-time", "Part-time", "Contract", "Flexible"] as const;
 
@@ -238,6 +248,26 @@ export function DeveloperCard({ developer }: { developer: Developer }) {
               </Badge>
             )}
           </div>
+
+          {/* Country and Languages */}
+          {(developer.country || developer.languages.length > 0) && (
+            <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+              {developer.country && (
+                <div className="flex items-center gap-1">
+                  <Globe className="h-3.5 w-3.5" />
+                  <span>{getCountryName(developer.country)}</span>
+                </div>
+              )}
+              {developer.languages.length > 0 && (
+                <div className="flex items-center gap-1">
+                  <Languages className="h-3.5 w-3.5" />
+                  <span>
+                    {developer.languages.map(getLanguageName).join(", ")}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Status */}
           <div className="flex items-center justify-between text-sm">

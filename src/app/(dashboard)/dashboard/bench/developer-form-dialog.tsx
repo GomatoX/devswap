@@ -237,7 +237,7 @@ export function DeveloperFormDialog({
   };
 
   const dialogContent = (
-    <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+    <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
       <DialogHeader>
         <DialogTitle>{isEdit ? "Edit Developer" : "Add Developer"}</DialogTitle>
         <DialogDescription>
@@ -247,335 +247,370 @@ export function DeveloperFormDialog({
         </DialogDescription>
       </DialogHeader>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Photo Upload */}
-        <div className="space-y-2">
-          <Label>Profile Photo</Label>
-          <div className="flex items-center gap-4">
-            {formData.photoUrl ? (
-              <div className="relative">
-                <Image
-                  src={formData.photoUrl}
-                  alt="Profile"
-                  width={80}
-                  height={80}
-                  className="rounded-lg object-cover"
-                />
-                <button
-                  type="button"
-                  onClick={() => setFormData({ ...formData, photoUrl: "" })}
-                  className="absolute -top-2 -right-2 p-1 bg-destructive text-destructive-foreground rounded-full"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </div>
-            ) : (
-              <div className="w-20 h-20 rounded-lg bg-muted flex items-center justify-center">
-                <User className="h-8 w-8 text-muted-foreground" />
-              </div>
-            )}
-            <FileUploadButton
-              endpoint="developerPhoto"
-              label="Upload Photo"
-              onUploadComplete={(url) => {
-                setFormData({ ...formData, photoUrl: url });
-                toast.success("Photo uploaded!");
-              }}
-              onUploadError={(error) => {
-                toast.error(`Upload failed: ${error.message}`);
-              }}
-            />
-          </div>
-        </div>
+      <form onSubmit={handleSubmit} className="space-y-8">
+        {/* Section: Profile */}
+        <div className="space-y-4">
+          <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+            Profile
+          </h3>
 
-        {/* Basic Info */}
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-2">
-            <Label htmlFor="realName">Real Name *</Label>
-            <Input
-              id="realName"
-              value={formData.realName}
-              onChange={(e) =>
-                setFormData({ ...formData, realName: e.target.value })
-              }
-              placeholder="John Doe"
-              required
-            />
-            <p className="text-xs text-muted-foreground">
-              Internal only, not shown publicly
-            </p>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="pseudonym">Public Name *</Label>
-            <Input
-              id="pseudonym"
-              value={formData.pseudonym}
-              onChange={(e) =>
-                setFormData({ ...formData, pseudonym: e.target.value })
-              }
-              placeholder="John D."
-              required
-            />
-            <p className="text-xs text-muted-foreground">
-              Shown on marketplace listings
-            </p>
-          </div>
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-2">
-            <Label htmlFor="title">Title *</Label>
-            <Input
-              id="title"
-              value={formData.title}
-              onChange={(e) =>
-                setFormData({ ...formData, title: e.target.value })
-              }
-              placeholder="Senior Frontend Developer"
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="level">Experience Level *</Label>
-            <Select
-              value={formData.level}
-              onValueChange={(v) => setFormData({ ...formData, level: v })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select level" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Junior">Junior (0-2 years)</SelectItem>
-                <SelectItem value="Mid">Mid (2-5 years)</SelectItem>
-                <SelectItem value="Senior">Senior (5-8 years)</SelectItem>
-                <SelectItem value="Lead">Lead (8+ years)</SelectItem>
-                <SelectItem value="Principal">Principal (10+ years)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        {/* Bio */}
-        <div className="space-y-2">
-          <Label htmlFor="bio">Bio</Label>
-          <Textarea
-            id="bio"
-            value={formData.bio}
-            onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-            placeholder="Brief description of experience and expertise..."
-            rows={3}
-          />
-        </div>
-
-        {/* CV Upload */}
-        <div className="space-y-2">
-          <Label>CV / Resume</Label>
-          <div className="flex items-center gap-4">
-            {formData.cvUrl ? (
-              <div className="flex items-center gap-2 p-2 border rounded-lg">
-                <FileText className="h-5 w-5 text-muted-foreground" />
-                <span className="text-sm">CV uploaded</span>
-                <button
-                  type="button"
-                  onClick={() => setFormData({ ...formData, cvUrl: "" })}
-                  className="p-1 hover:bg-muted rounded"
-                >
-                  <Trash2 className="h-4 w-4 text-destructive" />
-                </button>
-              </div>
-            ) : (
+          {/* Photo Upload */}
+          <div className="flex items-start gap-6">
+            <div className="space-y-2">
+              {formData.photoUrl ? (
+                <div className="relative">
+                  <Image
+                    src={formData.photoUrl}
+                    alt="Profile"
+                    width={96}
+                    height={96}
+                    className="rounded-xl object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, photoUrl: "" })}
+                    className="absolute -top-2 -right-2 p-1 bg-destructive text-destructive-foreground rounded-full"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ) : (
+                <div className="w-24 h-24 rounded-xl bg-muted flex items-center justify-center">
+                  <User className="h-10 w-10 text-muted-foreground" />
+                </div>
+              )}
               <FileUploadButton
-                endpoint="developerCV"
-                label="Upload CV"
+                endpoint="developerPhoto"
+                label="Upload Photo"
                 onUploadComplete={(url) => {
-                  setFormData({ ...formData, cvUrl: url });
-                  toast.success("CV uploaded!");
+                  setFormData({ ...formData, photoUrl: url });
+                  toast.success("Photo uploaded!");
                 }}
                 onUploadError={(error) => {
                   toast.error(`Upload failed: ${error.message}`);
                 }}
               />
-            )}
-          </div>
-        </div>
-
-        {/* Country and Languages */}
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-2">
-            <Label htmlFor="country">Country</Label>
-            <Select
-              value={formData.country}
-              onValueChange={(v) => setFormData({ ...formData, country: v })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select country" />
-              </SelectTrigger>
-              <SelectContent>
-                {countries.map((country) => (
-                  <SelectItem key={country.code} value={country.code}>
-                    {country.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <Label>Languages</Label>
-            <div className="flex flex-wrap gap-2 p-2 border rounded-lg min-h-[40px]">
-              {formData.languages.map((langCode) => {
-                const lang = languages.find((l) => l.code === langCode);
-                return (
-                  <Badge key={langCode} variant="secondary" className="gap-1">
-                    {lang?.name || langCode}
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setFormData({
-                          ...formData,
-                          languages: formData.languages.filter(
-                            (l) => l !== langCode,
-                          ),
-                        })
-                      }
-                      className="ml-1 hover:text-destructive"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </Badge>
-                );
-              })}
             </div>
-            <Select
-              value=""
-              onValueChange={(v) => {
-                if (v && !formData.languages.includes(v)) {
-                  setFormData({
-                    ...formData,
-                    languages: [...formData.languages, v],
-                  });
-                }
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Add language..." />
-              </SelectTrigger>
-              <SelectContent>
-                {languages
-                  .filter((l) => !formData.languages.includes(l.code))
-                  .map((lang) => (
-                    <SelectItem key={lang.code} value={lang.code}>
-                      {lang.name}
-                    </SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
 
-        {/* Skills */}
-        <div className="space-y-3">
-          <Label>Skills & Technologies</Label>
-          <div className="flex gap-2">
-            <div className="flex-1 relative">
-              <Input
-                value={newSkill.name}
-                onChange={(e) =>
-                  setNewSkill({ ...newSkill, name: e.target.value })
-                }
-                placeholder="Type skill name (e.g., React, Python)..."
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    handleAddSkill();
+            {/* Names */}
+            <div className="flex-1 grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="realName">Real Name *</Label>
+                <Input
+                  id="realName"
+                  value={formData.realName}
+                  onChange={(e) =>
+                    setFormData({ ...formData, realName: e.target.value })
                   }
-                }}
-                list="skill-suggestions"
-              />
-              <datalist id="skill-suggestions">
-                {popularSkills
-                  .filter(
-                    (s) =>
-                      !skills.some(
-                        (sk) => sk.name.toLowerCase() === s.toLowerCase(),
-                      ),
-                  )
-                  .map((skill) => (
-                    <option key={skill} value={skill} />
-                  ))}
-              </datalist>
+                  placeholder="John Doe"
+                  required
+                />
+                <p className="text-xs text-muted-foreground">
+                  Internal only, not shown publicly
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="pseudonym">Public Name *</Label>
+                <Input
+                  id="pseudonym"
+                  value={formData.pseudonym}
+                  onChange={(e) =>
+                    setFormData({ ...formData, pseudonym: e.target.value })
+                  }
+                  placeholder="John D."
+                  required
+                />
+                <p className="text-xs text-muted-foreground">
+                  Shown on marketplace listings
+                </p>
+              </div>
             </div>
-            <Input
-              type="number"
-              min="0"
-              max="30"
-              className="w-24"
-              placeholder="Years"
-              value={newSkill.years}
-              onChange={(e) =>
-                setNewSkill({
-                  ...newSkill,
-                  years: parseInt(e.target.value) || 0,
-                })
-              }
-            />
-            <Button type="button" variant="outline" onClick={handleAddSkill}>
-              <Plus className="h-4 w-4" />
-            </Button>
+          </div>
+        </div>
+
+        <div className="border-t" />
+
+        {/* Section: Professional Info */}
+        <div className="space-y-4">
+          <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+            Professional Info
+          </h3>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="title">Title *</Label>
+              <Input
+                id="title"
+                value={formData.title}
+                onChange={(e) =>
+                  setFormData({ ...formData, title: e.target.value })
+                }
+                placeholder="Senior Frontend Developer"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="level">Experience Level *</Label>
+              <Select
+                value={formData.level}
+                onValueChange={(v) => setFormData({ ...formData, level: v })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select level" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Junior">Junior (0-2 years)</SelectItem>
+                  <SelectItem value="Mid">Mid (2-5 years)</SelectItem>
+                  <SelectItem value="Senior">Senior (5-8 years)</SelectItem>
+                  <SelectItem value="Lead">Lead (8+ years)</SelectItem>
+                  <SelectItem value="Principal">
+                    Principal (10+ years)
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
-          {skills.length > 0 && (
-            <div className="space-y-2 pt-2">
-              {skills.map((skill) => (
-                <div
-                  key={skill.name}
-                  className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border border-border/50"
-                >
-                  <div className="flex items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={() => handleTogglePrimary(skill.name)}
-                      className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
-                        skill.isPrimary
-                          ? "bg-primary border-primary text-primary-foreground"
-                          : "border-muted-foreground/30 hover:border-primary/50"
-                      }`}
-                    >
-                      {skill.isPrimary && (
-                        <svg
-                          className="w-3 h-3"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={3}
-                            d="M5 13l4 4L19 7"
-                          />
-                        </svg>
-                      )}
-                    </button>
-                    <span className="font-medium">{skill.name}</span>
-                    <Badge variant="outline" className="text-xs">
-                      {skill.years} {skill.years === 1 ? "year" : "years"}
-                    </Badge>
-                  </div>
+          {/* Bio */}
+          <div className="space-y-2">
+            <Label htmlFor="bio">Bio</Label>
+            <Textarea
+              id="bio"
+              value={formData.bio}
+              onChange={(e) =>
+                setFormData({ ...formData, bio: e.target.value })
+              }
+              placeholder="Brief description of experience and expertise..."
+              rows={3}
+            />
+          </div>
+
+          {/* CV Upload */}
+          <div className="space-y-2">
+            <Label>CV / Resume</Label>
+            <div className="flex items-center gap-4">
+              {formData.cvUrl ? (
+                <div className="flex items-center gap-2 p-2 border rounded-lg">
+                  <FileText className="h-5 w-5 text-muted-foreground" />
+                  <span className="text-sm">CV uploaded</span>
                   <button
                     type="button"
-                    onClick={() => handleRemoveSkill(skill.name)}
-                    className="p-1 hover:bg-destructive/10 rounded text-muted-foreground hover:text-destructive transition-colors"
+                    onClick={() => setFormData({ ...formData, cvUrl: "" })}
+                    className="p-1 hover:bg-muted rounded"
                   >
-                    <X className="h-4 w-4" />
+                    <Trash2 className="h-4 w-4 text-destructive" />
                   </button>
                 </div>
-              ))}
+              ) : (
+                <FileUploadButton
+                  endpoint="developerCV"
+                  label="Upload CV"
+                  onUploadComplete={(url) => {
+                    setFormData({ ...formData, cvUrl: url });
+                    toast.success("CV uploaded!");
+                  }}
+                  onUploadError={(error) => {
+                    toast.error(`Upload failed: ${error.message}`);
+                  }}
+                />
+              )}
             </div>
-          )}
-          <p className="text-xs text-muted-foreground">
-            Check the box to mark skills as "Core Technologies" (highlighted on
-            profile).
-          </p>
+          </div>
+        </div>
+
+        <div className="border-t" />
+
+        {/* Section: Location & Languages */}
+        <div className="space-y-4">
+          <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+            Location & Languages
+          </h3>
+
+          {/* Country and Languages */}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="country">Country</Label>
+              <Select
+                value={formData.country}
+                onValueChange={(v) => setFormData({ ...formData, country: v })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select country" />
+                </SelectTrigger>
+                <SelectContent>
+                  {countries.map((country) => (
+                    <SelectItem key={country.code} value={country.code}>
+                      {country.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Languages</Label>
+              <div className="flex flex-wrap gap-2 p-2 border rounded-lg min-h-[40px]">
+                {formData.languages.map((langCode) => {
+                  const lang = languages.find((l) => l.code === langCode);
+                  return (
+                    <Badge key={langCode} variant="secondary" className="gap-1">
+                      {lang?.name || langCode}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setFormData({
+                            ...formData,
+                            languages: formData.languages.filter(
+                              (l) => l !== langCode,
+                            ),
+                          })
+                        }
+                        className="ml-1 hover:text-destructive"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  );
+                })}
+              </div>
+              <Select
+                value=""
+                onValueChange={(v) => {
+                  if (v && !formData.languages.includes(v)) {
+                    setFormData({
+                      ...formData,
+                      languages: [...formData.languages, v],
+                    });
+                  }
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Add language..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {languages
+                    .filter((l) => !formData.languages.includes(l.code))
+                    .map((lang) => (
+                      <SelectItem key={lang.code} value={lang.code}>
+                        {lang.name}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
+
+        <div className="border-t" />
+
+        {/* Section: Skills */}
+        <div className="space-y-4">
+          <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+            Skills & Technologies
+          </h3>
+
+          <div className="space-y-3">
+            <div className="flex gap-2">
+              <div className="flex-1 relative">
+                <Input
+                  value={newSkill.name}
+                  onChange={(e) =>
+                    setNewSkill({ ...newSkill, name: e.target.value })
+                  }
+                  placeholder="Type skill name (e.g., React, Python)..."
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleAddSkill();
+                    }
+                  }}
+                  list="skill-suggestions"
+                />
+                <datalist id="skill-suggestions">
+                  {popularSkills
+                    .filter(
+                      (s) =>
+                        !skills.some(
+                          (sk) => sk.name.toLowerCase() === s.toLowerCase(),
+                        ),
+                    )
+                    .map((skill) => (
+                      <option key={skill} value={skill} />
+                    ))}
+                </datalist>
+              </div>
+              <Input
+                type="number"
+                min="0"
+                max="30"
+                className="w-24"
+                placeholder="Years"
+                value={newSkill.years}
+                onChange={(e) =>
+                  setNewSkill({
+                    ...newSkill,
+                    years: parseInt(e.target.value) || 0,
+                  })
+                }
+              />
+              <Button type="button" variant="outline" onClick={handleAddSkill}>
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+
+            {skills.length > 0 && (
+              <div className="space-y-2 pt-2">
+                {skills.map((skill) => (
+                  <div
+                    key={skill.name}
+                    className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border border-border/50"
+                  >
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => handleTogglePrimary(skill.name)}
+                        className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
+                          skill.isPrimary
+                            ? "bg-primary border-primary text-primary-foreground"
+                            : "border-muted-foreground/30 hover:border-primary/50"
+                        }`}
+                      >
+                        {skill.isPrimary && (
+                          <svg
+                            className="w-3 h-3"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={3}
+                              d="M5 13l4 4L19 7"
+                            />
+                          </svg>
+                        )}
+                      </button>
+                      <span className="font-medium">{skill.name}</span>
+                      <Badge variant="outline" className="text-xs">
+                        {skill.years} {skill.years === 1 ? "year" : "years"}
+                      </Badge>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveSkill(skill.name)}
+                      className="p-1 hover:bg-destructive/10 rounded text-muted-foreground hover:text-destructive transition-colors"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <p className="text-xs text-muted-foreground">
+              Check the box to mark skills as "Core Technologies" (highlighted
+              on profile).
+            </p>
+          </div>
         </div>
 
         <DialogFooter>

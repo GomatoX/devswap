@@ -61,7 +61,11 @@ export async function createMatchmakingCheckout(requestId: string) {
     }
 
     const stripe = getStripe();
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    // Use APP_URL (server-side) or NEXT_PUBLIC_APP_URL as fallback
+    const baseUrl =
+      process.env.APP_URL ||
+      process.env.NEXT_PUBLIC_APP_URL ||
+      "http://localhost:3000";
 
     // Create Stripe checkout session for one-time payment
     const session = await stripe.checkout.sessions.create({

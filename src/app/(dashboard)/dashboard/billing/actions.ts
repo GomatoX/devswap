@@ -6,6 +6,12 @@ import { prisma } from "@/lib/prisma";
 import { getStripe, TIER_CONFIG, PRICE_IDS } from "@/lib/stripe";
 import { SubscriptionTier } from "@prisma/client";
 
+// Use APP_URL (server-side) or NEXT_PUBLIC_APP_URL as fallback
+const APP_URL =
+  process.env.APP_URL ||
+  process.env.NEXT_PUBLIC_APP_URL ||
+  "http://localhost:3000";
+
 // Get current user's company
 async function getCurrentCompany() {
   const { userId } = await auth();
@@ -102,8 +108,8 @@ export async function createCheckoutSession(
       customer: customerId,
       mode: "subscription",
       line_items: [{ price: priceId, quantity: 1 }],
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/billing?success=true`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/billing?canceled=true`,
+      success_url: `${APP_URL}/dashboard/billing?success=true`,
+      cancel_url: `${APP_URL}/dashboard/billing?canceled=true`,
       metadata: { companyId: company.id, tier },
     });
 
@@ -125,7 +131,7 @@ export async function createPortalSession() {
 
     const session = await getStripe().billingPortal.sessions.create({
       customer: company.stripeCustomerId,
-      return_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/billing`,
+      return_url: `${APP_URL}/dashboard/billing`,
     });
 
     return { success: true, data: { url: session.url } };
