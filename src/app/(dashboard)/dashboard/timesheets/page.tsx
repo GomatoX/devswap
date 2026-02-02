@@ -1,7 +1,10 @@
-import { auth } from "@clerk/nextjs/server";
+import { auth, currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { getTimesheets } from "./actions";
 import { TimesheetsClient } from "./timesheets-client";
+import { SubscriptionGate } from "@/components/subscription-gate";
+import { checkSubscription } from "@/lib/subscription";
+import { getPlatformSettings } from "@/lib/platform-settings";
 
 export default async function TimesheetsPage() {
   const { userId } = await auth();
@@ -9,6 +12,11 @@ export default async function TimesheetsPage() {
   if (!userId) {
     redirect("/sign-in");
   }
+
+  const user = await currentUser();
+  const isAdmin = user?.publicMetadata?.isAdmin === true;
+  const subscription = await checkSubscription();
+  const settings = await getPlatformSettings();
 
   const result = await getTimesheets();
 
@@ -21,9 +29,17 @@ export default async function TimesheetsPage() {
   }
 
   return (
-    <TimesheetsClient
-      timesheets={result.data || []}
-      currentCompanyId={result.companyId || ""}
-    />
+    <SubscriptionGate
+      isActive={subscription.isActive}
+      tier={subscription.tier}
+      isAdmin={isAdmin}
+      buyerMonthlyPrice={settings.buyerMonthlyPrice}
+      buyerFeatures={settings.buyerFeatures}
+    >
+      <TimesheetsClient
+        timesheets={result.data || []}
+        currentCompanyId={result.companyId || ""}
+      />
+    </SubscriptionGate>
   );
 }

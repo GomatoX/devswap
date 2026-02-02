@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Card,
   CardContent,
@@ -12,8 +13,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Settings, Crown, Zap, Euro, Users, Loader2 } from "lucide-react";
+import { Settings, Crown, Zap, Users, Loader2, Save } from "lucide-react";
 import { toast } from "sonner";
 import { updatePlatformSettingsAction } from "./actions";
 import { type PlatformSettings } from "@/lib/platform-settings";
@@ -33,16 +35,26 @@ export function PlatformSettingsPanel({
   settings: initialSettings,
   foundingStats,
 }: PlatformSettingsPanelProps) {
-  const [settings, setSettings] = useState(initialSettings);
+  const router = useRouter();
+  const [formData, setFormData] = useState(initialSettings);
   const [saving, setSaving] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
+
+  const handleChange = <K extends keyof PlatformSettings>(
+    key: K,
+    value: PlatformSettings[K],
+  ) => {
+    setFormData((prev) => ({ ...prev, [key]: value }));
+    setHasChanges(true);
+  };
 
   const handleToggleBetaMode = async () => {
     setSaving(true);
-    const newValue = !settings.betaMode;
+    const newValue = !formData.betaMode;
     const result = await updatePlatformSettingsAction({ betaMode: newValue });
 
     if (result.success) {
-      setSettings({ ...settings, betaMode: newValue });
+      setFormData((prev) => ({ ...prev, betaMode: newValue }));
       toast.success(newValue ? "Beta mode enabled" : "Beta mode disabled");
     } else {
       toast.error(result.error || "Failed to update");
@@ -50,18 +62,16 @@ export function PlatformSettingsPanel({
     setSaving(false);
   };
 
-  const handleUpdateSetting = async (
-    key: keyof PlatformSettings,
-    value: number,
-  ) => {
+  const handleSave = async () => {
     setSaving(true);
-    const result = await updatePlatformSettingsAction({ [key]: value });
+    const result = await updatePlatformSettingsAction(formData);
 
     if (result.success) {
-      setSettings({ ...settings, [key]: value });
-      toast.success("Setting updated");
+      toast.success("Settings saved successfully");
+      setHasChanges(false);
+      router.refresh();
     } else {
-      toast.error(result.error || "Failed to update");
+      toast.error(result.error || "Failed to save settings");
     }
     setSaving(false);
   };
@@ -76,10 +86,31 @@ export function PlatformSettingsPanel({
               Platform Settings
             </CardTitle>
             <CardDescription>
-              Configure Beta mode, pricing, and founding member program
+              Configure Beta mode and founding member program
             </CardDescription>
           </div>
-          {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+          <div className="flex items-center gap-2">
+            {hasChanges && (
+              <Badge
+                variant="outline"
+                className="text-amber-600 border-amber-600"
+              >
+                Unsaved Changes
+              </Badge>
+            )}
+            <Button
+              onClick={handleSave}
+              disabled={saving || !hasChanges}
+              size="sm"
+            >
+              {saving ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <Save className="h-4 w-4 mr-2" />
+              )}
+              Save
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -98,13 +129,13 @@ export function PlatformSettingsPanel({
           </div>
           <div className="flex items-center gap-3">
             <Badge
-              variant={settings.betaMode ? "default" : "secondary"}
-              className={settings.betaMode ? "bg-violet-500" : ""}
+              variant={formData.betaMode ? "default" : "secondary"}
+              className={formData.betaMode ? "bg-violet-500" : ""}
             >
-              {settings.betaMode ? "ON" : "OFF"}
+              {formData.betaMode ? "ON" : "OFF"}
             </Badge>
             <Switch
-              checked={settings.betaMode}
+              checked={formData.betaMode}
               onCheckedChange={handleToggleBetaMode}
               disabled={saving}
             />
@@ -143,13 +174,13 @@ export function PlatformSettingsPanel({
               <Input
                 id="foundingLimit"
                 type="number"
-                defaultValue={settings.foundingMemberLimit}
-                onBlur={(e) => {
-                  const val = parseInt(e.target.value);
-                  if (val > 0 && val !== settings.foundingMemberLimit) {
-                    handleUpdateSetting("foundingMemberLimit", val);
-                  }
-                }}
+                value={formData.foundingMemberLimit}
+                onChange={(e) =>
+                  handleChange(
+                    "foundingMemberLimit",
+                    parseInt(e.target.value) || 0,
+                  )
+                }
               />
             </div>
 
@@ -159,55 +190,13 @@ export function PlatformSettingsPanel({
               <Input
                 id="foundingFee"
                 type="number"
-                defaultValue={settings.foundingMemberFee}
-                onBlur={(e) => {
-                  const val = parseInt(e.target.value);
-                  if (val >= 0 && val !== settings.foundingMemberFee) {
-                    handleUpdateSetting("foundingMemberFee", val);
-                  }
-                }}
-              />
-            </div>
-          </div>
-        </div>
-
-        <Separator />
-
-        {/* Pricing Configuration */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-2">
-            <Euro className="h-5 w-5 text-green-500" />
-            <h3 className="font-semibold">Pricing Configuration</h3>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="subPrice">Subscription Price (€/month)</Label>
-              <Input
-                id="subPrice"
-                type="number"
-                defaultValue={settings.subscriptionPrice}
-                onBlur={(e) => {
-                  const val = parseInt(e.target.value);
-                  if (val > 0 && val !== settings.subscriptionPrice) {
-                    handleUpdateSetting("subscriptionPrice", val);
-                  }
-                }}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="matchFee">Matchmaking Fee (€)</Label>
-              <Input
-                id="matchFee"
-                type="number"
-                defaultValue={settings.matchmakingFee}
-                onBlur={(e) => {
-                  const val = parseInt(e.target.value);
-                  if (val > 0 && val !== settings.matchmakingFee) {
-                    handleUpdateSetting("matchmakingFee", val);
-                  }
-                }}
+                value={formData.foundingMemberFee}
+                onChange={(e) =>
+                  handleChange(
+                    "foundingMemberFee",
+                    parseInt(e.target.value) || 0,
+                  )
+                }
               />
             </div>
           </div>

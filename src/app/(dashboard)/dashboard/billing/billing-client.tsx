@@ -22,7 +22,7 @@ import {
   createPortalSession,
   cancelSubscription,
 } from "./actions";
-import { TIER_CONFIG } from "@/lib/stripe";
+import { type TierConfig } from "@/lib/stripe";
 import { type SubscriptionCheck } from "@/lib/subscription";
 
 type BillingData = {
@@ -40,10 +40,15 @@ type BillingData = {
 export function BillingClient({
   billing,
   subscriptionStatus,
+  tierConfig,
+  currency,
 }: {
   billing: BillingData;
   subscriptionStatus: SubscriptionCheck;
+  tierConfig: TierConfig;
+  currency: "USD" | "EUR";
 }) {
+  const currencySymbol = currency === "EUR" ? "€" : "$";
   const router = useRouter();
   const searchParams = useSearchParams();
   const [yearly, setYearly] = useState(false);
@@ -59,7 +64,7 @@ export function BillingClient({
     router.replace("/dashboard/billing");
   }
 
-  const handleUpgrade = async (tier: "BUYER" | "VENDOR") => {
+  const handleUpgrade = async (tier: "BUYER") => {
     setLoading(tier);
     const result = await createCheckoutSession(
       tier,
@@ -178,8 +183,8 @@ export function BillingClient({
                 </div>
                 <div>
                   <p className="font-medium">
-                    {TIER_CONFIG[currentTier as keyof typeof TIER_CONFIG]
-                      ?.name || currentTier}
+                    {tierConfig[currentTier as keyof typeof tierConfig]?.name ||
+                      currentTier}
                   </p>
                   <p className="text-sm text-muted-foreground">
                     {billing?.subscription?.cancelAtPeriodEnd
@@ -257,7 +262,7 @@ export function BillingClient({
       </div>
 
       {/* Pricing Cards */}
-      <div className="grid gap-6 md:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-2 max-w-3xl mx-auto">
         {/* Free Tier */}
         <Card className={currentTier === "FREE" ? "ring-2 ring-primary" : ""}>
           <CardHeader>
@@ -265,9 +270,9 @@ export function BillingClient({
             <CardDescription>For browsing and exploration</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-4xl font-bold mb-4">$0</div>
+            <div className="text-4xl font-bold mb-4">{currencySymbol}0</div>
             <ul className="space-y-2">
-              {TIER_CONFIG.FREE.features.map((feature) => (
+              {tierConfig.FREE.features.map((feature) => (
                 <li key={feature} className="flex items-center gap-2 text-sm">
                   <Check className="h-4 w-4 text-green-600" />
                   {feature}
@@ -293,16 +298,16 @@ export function BillingClient({
           </CardHeader>
           <CardContent>
             <div className="text-4xl font-bold mb-4">
-              $
+              {currencySymbol}
               {yearly
-                ? Math.round(TIER_CONFIG.BUYER.price.yearly / 12)
-                : TIER_CONFIG.BUYER.price.monthly}
+                ? Math.round(tierConfig.BUYER.price.yearly / 12)
+                : tierConfig.BUYER.price.monthly}
               <span className="text-base font-normal text-muted-foreground">
                 /mo
               </span>
             </div>
             <ul className="space-y-2">
-              {TIER_CONFIG.BUYER.features.map((feature) => (
+              {tierConfig.BUYER.features.map((feature) => (
                 <li key={feature} className="flex items-center gap-2 text-sm">
                   <Check className="h-4 w-4 text-green-600" />
                   {feature}
@@ -313,58 +318,12 @@ export function BillingClient({
           <CardFooter>
             <Button
               className="w-full"
-              disabled={
-                currentTier === "BUYER" || currentTier === "VENDOR" || !!loading
-              }
+              disabled={currentTier === "BUYER" || !!loading}
               onClick={() => handleUpgrade("BUYER")}
             >
               {loading === "BUYER" ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : currentTier === "BUYER" ? (
-                "Current Plan"
-              ) : currentTier === "VENDOR" ? (
-                "Included"
-              ) : (
-                "Upgrade"
-              )}
-            </Button>
-          </CardFooter>
-        </Card>
-
-        {/* Vendor Tier */}
-        <Card className={currentTier === "VENDOR" ? "ring-2 ring-primary" : ""}>
-          <CardHeader>
-            <CardTitle>Vendor</CardTitle>
-            <CardDescription>For companies selling talent</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="text-4xl font-bold mb-4">
-              $
-              {yearly
-                ? Math.round(TIER_CONFIG.VENDOR.price.yearly / 12)
-                : TIER_CONFIG.VENDOR.price.monthly}
-              <span className="text-base font-normal text-muted-foreground">
-                /mo
-              </span>
-            </div>
-            <ul className="space-y-2">
-              {TIER_CONFIG.VENDOR.features.map((feature) => (
-                <li key={feature} className="flex items-center gap-2 text-sm">
-                  <Check className="h-4 w-4 text-green-600" />
-                  {feature}
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-          <CardFooter>
-            <Button
-              className="w-full"
-              disabled={currentTier === "VENDOR" || !!loading}
-              onClick={() => handleUpgrade("VENDOR")}
-            >
-              {loading === "VENDOR" ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : currentTier === "VENDOR" ? (
                 "Current Plan"
               ) : (
                 "Upgrade"

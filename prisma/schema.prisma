@@ -43,7 +43,6 @@ enum RequestStatus {
 enum SubscriptionTier {
   FREE
   BUYER
-  VENDOR
 }
 
 enum SubscriptionStatus {
@@ -66,9 +65,27 @@ model PlatformSettings {
   foundingMemberFee     Int      @default(250)  // Discounted matchmaking fee for founders
   foundingMemberDeals   Int      @default(3)    // Free deals for founding members
   
-  // Pricing Configuration
-  subscriptionPrice     Int      @default(49)   // Monthly subscription (EUR)
-  matchmakingFee        Int      @default(500)  // One-time matchmaking fee (EUR)
+  // Currency for all pricing
+  currency              String   @default("EUR")
+  
+  // Tier Pricing Configuration
+  buyerMonthlyPrice     Int      @default(99)
+  buyerYearlyPrice      Int      @default(990)
+  
+  // Stripe Price IDs (synced from Stripe when admin clicks "Sync to Stripe")
+  stripeBuyerMonthlyPriceId  String?
+  stripeBuyerYearlyPriceId   String?
+  stripePricesLastSynced     DateTime?
+  
+  // Tier Features (editable from admin)
+  freeFeatures          String[] @default(["Browse marketplace", "Unlimited developers", "Create listings", "Basic support"])
+  buyerFeatures         String[] @default(["Everything in Free", "Contact developers directly", "Initiate deals & requests", "Basic analytics", "Email support"])
+  
+  // Legacy/Matchmaking
+  matchmakingFee        Int      @default(500)  // One-time matchmaking fee
+  matchmakingDescription String  @default("Success fee on completed long-term contracts")
+  matchmakingDetails    String   @default("This fee is only charged when a contract is successfully completed (engagement lasting 4+ weeks). It covers contract management, dispute resolution, timesheet verification, and our replacement guarantee.")
+  matchmakingFeatures   String[] @default(["Charged only on success", "Contract management", "Automated invoicing", "Legal protection", "Replacement guarantee"])
   
   updatedAt             DateTime @updatedAt
 }

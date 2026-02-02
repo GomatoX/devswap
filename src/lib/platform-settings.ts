@@ -7,8 +7,19 @@ export type PlatformSettings = {
   foundingMemberLimit: number;
   foundingMemberFee: number;
   foundingMemberDeals: number;
-  subscriptionPrice: number;
+  // Currency
+  currency: "USD" | "EUR";
+  // Tier pricing
+  buyerMonthlyPrice: number;
+  buyerYearlyPrice: number;
+  // Tier features
+  freeFeatures: string[];
+  buyerFeatures: string[];
+  // Matchmaking
   matchmakingFee: number;
+  matchmakingDescription: string;
+  matchmakingDetails: string;
+  matchmakingFeatures: string[];
 };
 
 const DEFAULT_SETTINGS: PlatformSettings = {
@@ -16,8 +27,33 @@ const DEFAULT_SETTINGS: PlatformSettings = {
   foundingMemberLimit: 50,
   foundingMemberFee: 250,
   foundingMemberDeals: 3,
-  subscriptionPrice: 49,
+  currency: "EUR",
+  buyerMonthlyPrice: 99,
+  buyerYearlyPrice: 990,
+  freeFeatures: [
+    "Browse marketplace",
+    "Unlimited developers",
+    "Create listings",
+    "Basic support",
+  ],
+  buyerFeatures: [
+    "Everything in Free",
+    "Contact developers directly",
+    "Initiate deals & requests",
+    "Basic analytics",
+    "Email support",
+  ],
   matchmakingFee: 500,
+  matchmakingDescription: "Success fee on completed long-term contracts",
+  matchmakingDetails:
+    "This fee is only charged when a contract is successfully completed (engagement lasting 4+ weeks). It covers contract management, dispute resolution, timesheet verification, and our replacement guarantee.",
+  matchmakingFeatures: [
+    "Charged only on success",
+    "Contract management",
+    "Automated invoicing",
+    "Legal protection",
+    "Replacement guarantee",
+  ],
 };
 
 /**
@@ -44,8 +80,15 @@ export async function getPlatformSettings(): Promise<PlatformSettings> {
       foundingMemberLimit: settings.foundingMemberLimit,
       foundingMemberFee: settings.foundingMemberFee,
       foundingMemberDeals: settings.foundingMemberDeals,
-      subscriptionPrice: settings.subscriptionPrice,
+      currency: settings.currency as "USD" | "EUR",
+      buyerMonthlyPrice: settings.buyerMonthlyPrice,
+      buyerYearlyPrice: settings.buyerYearlyPrice,
+      freeFeatures: settings.freeFeatures,
+      buyerFeatures: settings.buyerFeatures,
       matchmakingFee: settings.matchmakingFee,
+      matchmakingDescription: settings.matchmakingDescription,
+      matchmakingDetails: settings.matchmakingDetails,
+      matchmakingFeatures: settings.matchmakingFeatures,
     };
   } catch (error) {
     console.error("Failed to get platform settings:", error);

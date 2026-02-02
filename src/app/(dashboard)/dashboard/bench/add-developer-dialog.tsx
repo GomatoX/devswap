@@ -26,27 +26,7 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, X } from "lucide-react";
 import { toast } from "sonner";
 import { createDeveloper, type CreateDeveloperInput } from "./actions";
-
-const levels = ["Junior", "Mid", "Senior", "Lead", "Principal"] as const;
-
-const popularSkills = [
-  "React",
-  "TypeScript",
-  "Node.js",
-  "Python",
-  "Java",
-  "Go",
-  "PostgreSQL",
-  "MongoDB",
-  "AWS",
-  "Docker",
-  "Kubernetes",
-  "Next.js",
-  "Vue.js",
-  "Angular",
-  "GraphQL",
-  "REST API",
-];
+import { EXPERIENCE_LEVELS, POPULAR_SKILLS } from "./constants";
 
 type SkillInput = {
   name: string;
@@ -66,7 +46,7 @@ export function AddDeveloperDialog() {
     email: "",
     pseudonym: "",
     title: "",
-    level: "" as (typeof levels)[number] | "",
+    level: "" as (typeof EXPERIENCE_LEVELS)[number] | "",
     bio: "",
     internalRate: "",
   });
@@ -249,7 +229,7 @@ export function AddDeveloperDialog() {
                   <SelectValue placeholder="Select level" />
                 </SelectTrigger>
                 <SelectContent>
-                  {levels.map((level) => (
+                  {EXPERIENCE_LEVELS.map((level) => (
                     <SelectItem key={level} value={level}>
                       {level}
                     </SelectItem>
@@ -324,8 +304,9 @@ export function AddDeveloperDialog() {
 
             {/* Popular Skills */}
             <div className="flex flex-wrap gap-1">
-              {popularSkills
-                .filter((s) => !skills.find((added) => added.name === s))
+              {POPULAR_SKILLS.filter(
+                (s) => !skills.find((added) => added.name === s),
+              )
                 .slice(0, 8)
                 .map((skill) => (
                   <Badge

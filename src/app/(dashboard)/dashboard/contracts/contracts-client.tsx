@@ -254,10 +254,6 @@ export function ContractsClient({
     setLoading(false);
   };
 
-  const _selectedRequest = availableRequests.find(
-    (r) => r.id === formData.requestId,
-  );
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -316,63 +312,73 @@ export function ContractsClient({
                         {isVendor ? "Client:" : "Vendor:"} {counterparty.name}
                       </CardDescription>
                     </div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        {contract.status === "DRAFT" && (
-                          <DropdownMenuItem
-                            onClick={() =>
-                              handleStatusUpdate(contract.id, "SENT")
-                            }
+                    {/* Only show menu if there are actions available */}
+                    {(contract.status === "DRAFT" ||
+                      (contract.status === "SENT" && !isVendor) ||
+                      contract.status === "ACCEPTED" ||
+                      contract.status === "ACTIVE") && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
                           >
-                            <Send className="mr-2 h-4 w-4" />
-                            Send to {isVendor ? "Client" : "Vendor"}
-                          </DropdownMenuItem>
-                        )}
-                        {contract.status === "DRAFT" && (
-                          <DropdownMenuItem
-                            onClick={() => handleOpenEdit(contract)}
-                          >
-                            <Pencil className="mr-2 h-4 w-4" />
-                            Edit Contract
-                          </DropdownMenuItem>
-                        )}
-                        {contract.status === "SENT" && !isVendor && (
-                          <DropdownMenuItem
-                            onClick={() =>
-                              handleStatusUpdate(contract.id, "ACCEPTED")
-                            }
-                          >
-                            <CheckCircle className="mr-2 h-4 w-4" />
-                            Accept Contract
-                          </DropdownMenuItem>
-                        )}
-                        {contract.status === "ACCEPTED" && (
-                          <DropdownMenuItem
-                            onClick={() =>
-                              handleStatusUpdate(contract.id, "ACTIVE")
-                            }
-                          >
-                            <CheckCircle className="mr-2 h-4 w-4" />
-                            Mark Active
-                          </DropdownMenuItem>
-                        )}
-                        {contract.status === "ACTIVE" && (
-                          <DropdownMenuItem
-                            onClick={() =>
-                              handleStatusUpdate(contract.id, "COMPLETED")
-                            }
-                          >
-                            <CheckCircle className="mr-2 h-4 w-4" />
-                            Mark Completed
-                          </DropdownMenuItem>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          {contract.status === "DRAFT" && (
+                            <DropdownMenuItem
+                              onClick={() =>
+                                handleStatusUpdate(contract.id, "SENT")
+                              }
+                            >
+                              <Send className="mr-2 h-4 w-4" />
+                              Send to {isVendor ? "Client" : "Vendor"}
+                            </DropdownMenuItem>
+                          )}
+                          {contract.status === "DRAFT" && (
+                            <DropdownMenuItem
+                              onClick={() => handleOpenEdit(contract)}
+                            >
+                              <Pencil className="mr-2 h-4 w-4" />
+                              Edit Contract
+                            </DropdownMenuItem>
+                          )}
+                          {contract.status === "SENT" && !isVendor && (
+                            <DropdownMenuItem
+                              onClick={() =>
+                                handleStatusUpdate(contract.id, "ACCEPTED")
+                              }
+                            >
+                              <CheckCircle className="mr-2 h-4 w-4" />
+                              Accept Contract
+                            </DropdownMenuItem>
+                          )}
+                          {contract.status === "ACCEPTED" && (
+                            <DropdownMenuItem
+                              onClick={() =>
+                                handleStatusUpdate(contract.id, "ACTIVE")
+                              }
+                            >
+                              <CheckCircle className="mr-2 h-4 w-4" />
+                              Mark Active
+                            </DropdownMenuItem>
+                          )}
+                          {contract.status === "ACTIVE" && (
+                            <DropdownMenuItem
+                              onClick={() =>
+                                handleStatusUpdate(contract.id, "COMPLETED")
+                              }
+                            >
+                              <CheckCircle className="mr-2 h-4 w-4" />
+                              Mark Completed
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
                   </div>
                 </CardHeader>
                 <CardContent>

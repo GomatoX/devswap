@@ -50,7 +50,6 @@ export async function POST(req: NextRequest) {
           // Matchmaking fee paid - finalize the deal!
           const requestId = session.metadata?.requestId;
           const buyerCompanyId = session.metadata?.companyId;
-          const vendorId = session.metadata?.vendorId;
           const listingId = session.metadata?.listingId;
 
           if (requestId && buyerCompanyId) {

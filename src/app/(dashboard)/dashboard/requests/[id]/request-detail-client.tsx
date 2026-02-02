@@ -155,14 +155,8 @@ export function RequestDetailClient({
   const conversationId = request.conversation ? request.id : undefined;
 
   // Socket.io integration for real-time chat
-  const {
-    isConnected,
-    typingUsers: _typingUsers,
-    onNewMessage,
-    emitMessage,
-    emitTyping,
-    emitStopTyping,
-  } = useSocket(conversationId);
+  const { isConnected, onNewMessage, emitMessage, emitTyping, emitStopTyping } =
+    useSocket(conversationId);
 
   const status = statusConfig[request.status] || statusConfig.PENDING;
   const StatusIcon = status.icon;

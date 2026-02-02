@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
-import { getSocket, disconnectSocket } from "@/lib/socket-client";
+import { getSocket } from "@/lib/socket-client";
 import { Socket } from "socket.io-client";
 
 type Message = {

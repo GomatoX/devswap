@@ -14,39 +14,26 @@ function formatEUR(amount: number): string {
   return `€${amount}`;
 }
 
-function getTiers(subscriptionPrice: number) {
+function getTiers(settings: Awaited<ReturnType<typeof getPlatformSettings>>) {
   return [
     {
       name: "Free",
       price: "€0",
       period: "/month",
       description: "For companies looking to list their available resources",
-      features: [
-        { text: "Unlimited developer listings", included: true },
-        { text: "Public company profile", included: true },
-        { text: "Browse full marketplace", included: true },
-        { text: "Basic analytics dashboard", included: true },
-        { text: "Send engagement requests", included: false },
-        { text: "In-app messaging", included: false },
-        { text: "Priority placement in search", included: false },
-      ],
+      features: settings.freeFeatures.map((text) => ({ text, included: true })),
       cta: "Get Started",
       popular: false,
     },
     {
       name: "Buyer",
-      price: formatEUR(subscriptionPrice),
+      price: formatEUR(settings.buyerMonthlyPrice),
       period: "/month",
       description: "For companies actively seeking IT talent",
-      features: [
-        { text: "Everything in Free", included: true },
-        { text: "Send unlimited engagement requests", included: true },
-        { text: "In-app messaging & negotiations", included: true },
-        { text: "Advanced search filters", included: true },
-        { text: "Priority support", included: true },
-        { text: "Saved searches & alerts", included: true },
-        { text: "Export data & reports", included: true },
-      ],
+      features: settings.buyerFeatures.map((text) => ({
+        text,
+        included: true,
+      })),
       cta: "Start 14-Day Free Trial",
       popular: true,
     },
@@ -84,7 +71,7 @@ function getFaqs(matchmakingFee: number) {
 
 export default async function PricingPage() {
   const settings = await getPlatformSettings();
-  const tiers = getTiers(settings.subscriptionPrice);
+  const tiers = getTiers(settings);
   const faqs = getFaqs(settings.matchmakingFee);
   return (
     <div className="min-h-screen">
@@ -227,17 +214,14 @@ export default async function PricingPage() {
                         Matchmaking Fee: {formatEUR(settings.matchmakingFee)}
                       </CardTitle>
                       <CardDescription>
-                        One-time success fee per completed engagement
+                        {settings.matchmakingDescription}
                       </CardDescription>
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground">
-                    This fee is only charged when a contract is successfully
-                    completed (engagement lasting 4+ weeks). It covers contract
-                    management, dispute resolution, timesheet verification, and
-                    our replacement guarantee.
+                    {settings.matchmakingDetails}
                   </p>
                 </CardContent>
               </Card>

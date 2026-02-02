@@ -3,7 +3,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { getStripe, PRICE_IDS } from "@/lib/stripe";
+import { getStripe, getSyncedPriceIds } from "@/lib/stripe";
 
 // Use APP_URL (server-side) or NEXT_PUBLIC_APP_URL as fallback
 const APP_URL =
@@ -68,7 +68,7 @@ export async function getBillingInfo() {
 
 // CREATE: Checkout session for tier upgrade
 export async function createCheckoutSession(
-  tier: "BUYER" | "VENDOR",
+  tier: "BUYER",
   interval: "monthly" | "yearly",
 ) {
   try {
@@ -89,18 +89,16 @@ export async function createCheckoutSession(
       });
     }
 
-    // Get the price ID
-    const priceId =
-      tier === "BUYER"
-        ? interval === "yearly"
-          ? PRICE_IDS.BUYER_YEARLY
-          : PRICE_IDS.BUYER_MONTHLY
-        : interval === "yearly"
-          ? PRICE_IDS.VENDOR_YEARLY
-          : PRICE_IDS.VENDOR_MONTHLY;
+    // Get synced price IDs from database (no env var fallback)
+    const priceIds = await getSyncedPriceIds();
+    const priceId = interval === "yearly" ? priceIds.yearly : priceIds.monthly;
 
     if (!priceId) {
-      return { success: false, error: "Price not configured" };
+      return {
+        success: false,
+        error:
+          "Subscription pricing not configured. Admin must sync prices to Stripe first.",
+      };
     }
 
     const session = await getStripe().checkout.sessions.create({

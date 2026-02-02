@@ -30,25 +30,7 @@ import { toast } from "sonner";
 import { createDeveloper, updateDeveloper } from "./actions";
 import { getAllCountries, PRIORITY_COUNTRIES } from "@/lib/constants/countries";
 import { getAllLanguages, PRIORITY_LANGUAGES } from "@/lib/constants/languages";
-
-const popularSkills = [
-  "React",
-  "TypeScript",
-  "Node.js",
-  "Python",
-  "Java",
-  "Go",
-  "PostgreSQL",
-  "MongoDB",
-  "AWS",
-  "Docker",
-  "Kubernetes",
-  "Next.js",
-  "Vue.js",
-  "Angular",
-  "GraphQL",
-  "REST API",
-];
+import { POPULAR_SKILLS } from "./constants";
 
 type SkillInput = {
   name: string;
@@ -522,16 +504,14 @@ export function DeveloperFormDialog({
                   list="skill-suggestions"
                 />
                 <datalist id="skill-suggestions">
-                  {popularSkills
-                    .filter(
-                      (s) =>
-                        !skills.some(
-                          (sk) => sk.name.toLowerCase() === s.toLowerCase(),
-                        ),
-                    )
-                    .map((skill) => (
-                      <option key={skill} value={skill} />
-                    ))}
+                  {POPULAR_SKILLS.filter(
+                    (s) =>
+                      !skills.some(
+                        (sk) => sk.name.toLowerCase() === s.toLowerCase(),
+                      ),
+                  ).map((skill) => (
+                    <option key={skill} value={skill} />
+                  ))}
                 </datalist>
               </div>
               <Input

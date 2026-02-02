@@ -4,7 +4,6 @@ import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 import { getStripe } from "@/lib/stripe";
 
-const SUBSCRIPTION_PRICE_ID = process.env.STRIPE_SUBSCRIPTION_PRICE_ID || "";
 // Use APP_URL (server-side) or NEXT_PUBLIC_APP_URL as fallback
 const APP_URL =
   process.env.APP_URL ||
@@ -35,6 +34,21 @@ export async function createSubscriptionCheckout(): Promise<{
     if (!user.company) {
       return {
         error: "Company not found. Please complete your profile first.",
+      };
+    }
+
+    // Get the synced price ID from platform settings (no fallback - must sync first)
+    const platformSettings = await prisma.platformSettings.findUnique({
+      where: { id: "default" },
+      select: { stripeBuyerMonthlyPriceId: true },
+    });
+
+    const priceId = platformSettings?.stripeBuyerMonthlyPriceId;
+
+    if (!priceId) {
+      return {
+        error:
+          "Subscription pricing not configured. Admin must sync prices to Stripe first.",
       };
     }
 
@@ -85,7 +99,7 @@ export async function createSubscriptionCheckout(): Promise<{
       payment_method_types: ["card"],
       line_items: [
         {
-          price: SUBSCRIPTION_PRICE_ID,
+          price: priceId,
           quantity: 1,
         },
       ],

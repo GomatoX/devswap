@@ -126,7 +126,10 @@ export async function getPlatformSettingsWithStats() {
       getPlatformSettingsLib(),
       getFoundingMemberStatsLib(),
     ]);
-    return { success: true, data: { settings, foundingStats } };
+    return {
+      success: true,
+      data: { settings, foundingStats },
+    };
   } catch (error) {
     console.error("Failed to get platform settings:", error);
     return { success: false, error: "Failed to get settings" };
@@ -158,5 +161,115 @@ export async function grantFoundingMemberAction(companyId: string) {
   } catch (error) {
     console.error("Failed to grant founding member status:", error);
     return { success: false, error: "Failed to grant founding member status" };
+  }
+}
+
+// SYNC: Create Stripe prices from platform settings
+export async function syncPricesToStripeAction(): Promise<{
+  success: boolean;
+  error?: string;
+  monthlyPriceId?: string;
+  yearlyPriceId?: string;
+}> {
+  try {
+    await requireAdmin();
+
+    const { getStripe } = await import("@/lib/stripe");
+    const stripe = getStripe();
+
+    // Get current platform settings
+    const settings = await getPlatformSettingsLib();
+
+    // Get existing price IDs from database
+    const existingSettings = await prisma.platformSettings.findUnique({
+      where: { id: "default" },
+      select: {
+        stripeBuyerMonthlyPriceId: true,
+        stripeBuyerYearlyPriceId: true,
+      },
+    });
+
+    // Create a product if it doesn't exist (we'll reuse it)
+    let productId: string;
+    const products = await stripe.products.list({ limit: 1, active: true });
+    const existingProduct = products.data.find(
+      (p) => p.name === "DevSwap Buyer Subscription",
+    );
+
+    if (existingProduct) {
+      productId = existingProduct.id;
+    } else {
+      const product = await stripe.products.create({
+        name: "DevSwap Buyer Subscription",
+        description: "Full access to DevSwap platform features",
+      });
+      productId = product.id;
+    }
+
+    // Create new monthly price
+    const monthlyPrice = await stripe.prices.create({
+      product: productId,
+      unit_amount: settings.buyerMonthlyPrice * 100, // Convert to cents
+      currency: settings.currency.toLowerCase(),
+      recurring: { interval: "month" },
+      metadata: { type: "buyer_monthly" },
+    });
+
+    // Create new yearly price
+    const yearlyPrice = await stripe.prices.create({
+      product: productId,
+      unit_amount: settings.buyerYearlyPrice * 100, // Convert to cents
+      currency: settings.currency.toLowerCase(),
+      recurring: { interval: "year" },
+      metadata: { type: "buyer_yearly" },
+    });
+
+    // Archive old prices if they exist
+    if (existingSettings?.stripeBuyerMonthlyPriceId) {
+      try {
+        await stripe.prices.update(existingSettings.stripeBuyerMonthlyPriceId, {
+          active: false,
+        });
+      } catch (e) {
+        console.warn("Could not archive old monthly price:", e);
+      }
+    }
+
+    if (existingSettings?.stripeBuyerYearlyPriceId) {
+      try {
+        await stripe.prices.update(existingSettings.stripeBuyerYearlyPriceId, {
+          active: false,
+        });
+      } catch (e) {
+        console.warn("Could not archive old yearly price:", e);
+      }
+    }
+
+    // Store new price IDs in database
+    await prisma.platformSettings.update({
+      where: { id: "default" },
+      data: {
+        stripeBuyerMonthlyPriceId: monthlyPrice.id,
+        stripeBuyerYearlyPriceId: yearlyPrice.id,
+        stripePricesLastSynced: new Date(),
+      },
+    });
+
+    revalidatePath("/dashboard/admin");
+
+    return {
+      success: true,
+      monthlyPriceId: monthlyPrice.id,
+      yearlyPriceId: yearlyPrice.id,
+    };
+  } catch (error) {
+    console.error("Failed to sync prices to Stripe:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Failed to sync prices to Stripe",
+    };
   }
 }

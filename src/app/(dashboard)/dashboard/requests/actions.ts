@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { RequestStatus } from "@prisma/client";
+import { checkSubscription } from "@/lib/subscription";
 
 // Validation schemas
 const createRequestSchema = z.object({
@@ -166,6 +167,15 @@ export async function createRequest(input: CreateRequestInput) {
   try {
     const validatedData = createRequestSchema.parse(input);
     const { company, user } = await getCurrentUserAndCompany();
+
+    // RBAC: Only subscribed users can create engagement requests
+    const subscription = await checkSubscription();
+    if (!subscription.isActive) {
+      return {
+        success: false,
+        error: "Subscription required to send engagement requests",
+      };
+    }
 
     // Get listing and verify it's from another company
     const listing = await prisma.listing.findUnique({

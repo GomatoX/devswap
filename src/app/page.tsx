@@ -64,7 +64,9 @@ function formatEUR(amount: number): string {
   return `€${amount}`;
 }
 
-function getPricingTiers(subscriptionPrice: number, matchmakingFee: number) {
+function getPricingTiers(
+  settings: Awaited<ReturnType<typeof getPlatformSettings>>,
+) {
   return [
     {
       name: "Free",
@@ -72,42 +74,25 @@ function getPricingTiers(subscriptionPrice: number, matchmakingFee: number) {
       period: "/mo",
       description:
         "Perfect for companies looking to list their bench resources",
-      features: [
-        "Unlimited developer listings",
-        "Browse full marketplace",
-        "Company profile",
-        "Basic analytics",
-      ],
+      features: settings.freeFeatures,
       cta: "Get Started",
       popular: false,
     },
     {
       name: "Buyer",
-      price: formatEUR(subscriptionPrice),
+      price: formatEUR(settings.buyerMonthlyPrice),
       period: "/mo",
       description: "For companies actively seeking IT resources",
-      features: [
-        "Everything in Free",
-        "Send engagement requests",
-        "In-app messaging",
-        "Priority support",
-        "Advanced filters",
-      ],
+      features: settings.buyerFeatures,
       cta: "Start Free Trial",
       popular: true,
     },
     {
       name: "Matchmaking",
-      price: formatEUR(matchmakingFee),
+      price: formatEUR(settings.matchmakingFee),
       period: "one-time",
-      description: "Success fee on completed long-term contracts",
-      features: [
-        "Charged only on success",
-        "Contract management",
-        "Automated invoicing",
-        "Legal protection",
-        "Replacement guarantee",
-      ],
+      description: settings.matchmakingDescription,
+      features: settings.matchmakingFeatures,
       cta: "Learn More",
       popular: false,
     },
@@ -118,10 +103,7 @@ export default async function HomePage() {
   const { userId } = await auth();
   const isSignedIn = !!userId;
   const settings = await getPlatformSettings();
-  const pricingTiers = getPricingTiers(
-    settings.subscriptionPrice,
-    settings.matchmakingFee,
-  );
+  const pricingTiers = getPricingTiers(settings);
 
   return (
     <div className="flex min-h-screen flex-col">
