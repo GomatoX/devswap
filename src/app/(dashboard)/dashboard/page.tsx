@@ -304,9 +304,7 @@ export default async function DashboardPage() {
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium">Verification Status</span>
               <Badge
-                variant={
-                  company.status === "VERIFIED" ? "default" : "secondary"
-                }
+                variant={company.status === "ACTIVE" ? "default" : "secondary"}
               >
                 {company.status}
               </Badge>
