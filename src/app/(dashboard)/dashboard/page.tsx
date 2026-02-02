@@ -16,7 +16,24 @@ import {
   TrendingUp,
   MessageSquare,
   ArrowRight,
+  Check,
+  FileText,
+  Clock,
 } from "lucide-react";
+import { prisma } from "@/lib/prisma";
+import { formatDistanceToNow } from "date-fns";
+
+async function getCurrentCompany() {
+  const { userId } = await auth();
+  if (!userId) return null;
+
+  const user = await prisma.user.findUnique({
+    where: { clerkId: userId },
+    include: { company: true },
+  });
+
+  return user?.company || null;
+}
 
 export default async function DashboardPage() {
   const { userId } = await auth();
@@ -25,26 +42,128 @@ export default async function DashboardPage() {
     redirect("/sign-in");
   }
 
-  // Placeholder stats - will be replaced with real data
+  const company = await getCurrentCompany();
+
+  if (!company) {
+    redirect("/onboarding");
+  }
+
+  // Fetch real stats
+  const [
+    developerCount,
+    listingCount,
+    pendingRequestCount,
+    recentRequests,
+    recentContracts,
+  ] = await Promise.all([
+    // Count developers for this company
+    prisma.developer.count({
+      where: { companyId: company.id },
+    }),
+    // Count active listings
+    prisma.listing.count({
+      where: {
+        developer: { companyId: company.id },
+        status: "ACTIVE",
+      },
+    }),
+    // Count pending requests (where company is vendor or client)
+    prisma.request.count({
+      where: {
+        OR: [{ vendorId: company.id }, { clientId: company.id }],
+        status: { in: ["PENDING", "NEGOTIATING"] },
+      },
+    }),
+    // Recent requests
+    prisma.request.findMany({
+      where: {
+        OR: [{ vendorId: company.id }, { clientId: company.id }],
+      },
+      orderBy: { updatedAt: "desc" },
+      take: 5,
+      include: {
+        listing: {
+          include: {
+            developer: { select: { pseudonym: true } },
+          },
+        },
+        client: { select: { name: true } },
+        vendor: { select: { name: true } },
+      },
+    }),
+    // Recent contracts
+    prisma.contract.findMany({
+      where: {
+        request: {
+          OR: [{ vendorId: company.id }, { clientId: company.id }],
+        },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 5,
+      include: {
+        request: {
+          include: {
+            listing: {
+              include: {
+                developer: { select: { pseudonym: true } },
+              },
+            },
+          },
+        },
+      },
+    }),
+  ]);
+
+  // Build recent activity from requests and contracts
+  type ActivityItem = {
+    id: string;
+    type: "request" | "contract";
+    title: string;
+    description: string;
+    status: string;
+    time: Date;
+  };
+
+  const activities: ActivityItem[] = [
+    ...recentRequests.map((req) => ({
+      id: req.id,
+      type: "request" as const,
+      title: `Request: ${req.listing.developer.pseudonym}`,
+      description: `${req.vendorId === company.id ? "From" : "To"} ${req.vendorId === company.id ? req.client.name : req.vendor.name}`,
+      status: req.status,
+      time: req.updatedAt,
+    })),
+    ...recentContracts.map((contract) => ({
+      id: contract.id,
+      type: "contract" as const,
+      title: contract.title,
+      description: `Contract for ${contract.request.listing.developer.pseudonym}`,
+      status: contract.status,
+      time: contract.createdAt,
+    })),
+  ]
+    .sort((a, b) => b.time.getTime() - a.time.getTime())
+    .slice(0, 5);
+
   const stats = [
     {
       title: "Listed Developers",
-      value: "0",
-      description: "Active resources on bench",
+      value: String(developerCount),
+      description: "Resources on bench",
       icon: Users,
       color: "text-blue-500",
     },
     {
       title: "Active Listings",
-      value: "0",
+      value: String(listingCount),
       description: "Published to marketplace",
       icon: Briefcase,
       color: "text-green-500",
     },
     {
-      title: "Engagement Requests",
-      value: "0",
-      description: "Pending responses",
+      title: "Pending Requests",
+      value: String(pendingRequestCount),
+      description: "Awaiting response",
       icon: MessageSquare,
       color: "text-orange-500",
     },
@@ -56,6 +175,46 @@ export default async function DashboardPage() {
       color: "text-purple-500",
     },
   ];
+
+  // Getting started steps
+  const steps = [
+    {
+      number: 1,
+      title: "Add your first developer",
+      description: "List available resources on your bench",
+      completed: developerCount > 0,
+      href: "/dashboard/bench",
+      buttonText: developerCount > 0 ? "View" : "Add",
+    },
+    {
+      number: 2,
+      title: "Create a listing",
+      description: "Make your developers discoverable",
+      completed: listingCount > 0,
+      href: "/dashboard/bench",
+      buttonText: listingCount > 0 ? "View" : "Create",
+      disabled: developerCount === 0,
+    },
+    {
+      number: 3,
+      title: "Explore the marketplace",
+      description: "Find resources for your projects",
+      completed: false,
+      href: "/dashboard/market",
+      buttonText: "Browse",
+    },
+  ];
+
+  const statusColors: Record<string, string> = {
+    PENDING: "bg-yellow-500",
+    NEGOTIATING: "bg-blue-500",
+    OFFER_SENT: "bg-indigo-500",
+    ACCEPTED: "bg-green-500",
+    REJECTED: "bg-red-500",
+    DRAFT: "bg-gray-500",
+    ACTIVE: "bg-emerald-500",
+    COMPLETED: "bg-primary",
+  };
 
   return (
     <div className="space-y-8">
@@ -105,52 +264,34 @@ export default async function DashboardPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center gap-4">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-bold">
-                1
+            {steps.map((step) => (
+              <div key={step.number} className="flex items-center gap-4">
+                <div
+                  className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold ${
+                    step.completed
+                      ? "bg-green-500 text-white"
+                      : "bg-muted text-muted-foreground"
+                  }`}
+                >
+                  {step.completed ? <Check className="h-4 w-4" /> : step.number}
+                </div>
+                <div className="flex-1">
+                  <p
+                    className={`font-medium ${step.completed ? "line-through text-muted-foreground" : ""}`}
+                  >
+                    {step.title}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {step.description}
+                  </p>
+                </div>
+                <Link href={step.href}>
+                  <Button variant="outline" size="sm" disabled={step.disabled}>
+                    {step.buttonText}
+                  </Button>
+                </Link>
               </div>
-              <div className="flex-1">
-                <p className="font-medium">Add your first developer</p>
-                <p className="text-sm text-muted-foreground">
-                  List available resources on your bench
-                </p>
-              </div>
-              <Link href="/dashboard/bench">
-                <Button variant="outline" size="sm">
-                  Add
-                </Button>
-              </Link>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-muted-foreground text-sm font-bold">
-                2
-              </div>
-              <div className="flex-1">
-                <p className="font-medium">Create a listing</p>
-                <p className="text-sm text-muted-foreground">
-                  Make your developers discoverable
-                </p>
-              </div>
-              <Button variant="outline" size="sm" disabled>
-                Soon
-              </Button>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-muted-foreground text-sm font-bold">
-                3
-              </div>
-              <div className="flex-1">
-                <p className="font-medium">Explore the marketplace</p>
-                <p className="text-sm text-muted-foreground">
-                  Find resources for your projects
-                </p>
-              </div>
-              <Link href="/dashboard/market">
-                <Button variant="outline" size="sm">
-                  Browse
-                </Button>
-              </Link>
-            </div>
+            ))}
           </CardContent>
         </Card>
 
@@ -162,15 +303,23 @@ export default async function DashboardPage() {
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium">Verification Status</span>
-              <Badge variant="secondary">Pending</Badge>
+              <Badge
+                variant={
+                  company.status === "VERIFIED" ? "default" : "secondary"
+                }
+              >
+                {company.status}
+              </Badge>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium">Subscription</span>
-              <Badge variant="outline">Free</Badge>
+              <Badge variant="outline">{company.subscriptionTier}</Badge>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Listings Remaining</span>
-              <span className="text-sm text-muted-foreground">Unlimited</span>
+              <span className="text-sm font-medium">Developers</span>
+              <span className="text-sm text-muted-foreground">
+                {developerCount} registered
+              </span>
             </div>
             <Link href="/dashboard/settings">
               <Button variant="outline" className="w-full mt-4">
@@ -188,15 +337,51 @@ export default async function DashboardPage() {
           <CardDescription>Your latest platform interactions</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col items-center justify-center py-8 text-center">
-            <div className="rounded-full bg-muted p-4 mb-4">
-              <MessageSquare className="h-8 w-8 text-muted-foreground" />
+          {activities.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <div className="rounded-full bg-muted p-4 mb-4">
+                <MessageSquare className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <h3 className="font-medium">No activity yet</h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                Start by adding developers to your bench
+              </p>
             </div>
-            <h3 className="font-medium">No activity yet</h3>
-            <p className="text-sm text-muted-foreground mt-1">
-              Start by adding developers to your bench
-            </p>
-          </div>
+          ) : (
+            <div className="space-y-4">
+              {activities.map((activity) => (
+                <div
+                  key={`${activity.type}-${activity.id}`}
+                  className="flex items-center gap-4"
+                >
+                  <div className="rounded-full bg-muted p-2">
+                    {activity.type === "request" ? (
+                      <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                    ) : (
+                      <FileText className="h-4 w-4 text-muted-foreground" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium truncate">{activity.title}</p>
+                    <p className="text-sm text-muted-foreground truncate">
+                      {activity.description}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge
+                      className={statusColors[activity.status] || "bg-gray-500"}
+                    >
+                      {activity.status}
+                    </Badge>
+                    <span className="text-xs text-muted-foreground whitespace-nowrap flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      {formatDistanceToNow(activity.time, { addSuffix: true })}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
