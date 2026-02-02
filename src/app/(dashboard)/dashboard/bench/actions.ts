@@ -109,7 +109,16 @@ export async function getDevelopers() {
       orderBy: { createdAt: "desc" },
     });
 
-    return { success: true, data: developers };
+    // Serialize Decimal to number for client components
+    const serializedDevelopers = developers.map((dev) => ({
+      ...dev,
+      listings: dev.listings.map((listing) => ({
+        ...listing,
+        hourlyRate: Number(listing.hourlyRate),
+      })),
+    }));
+
+    return { success: true, data: serializedDevelopers };
   } catch (error) {
     console.error("Failed to fetch developers:", error);
     return { success: false, error: "Failed to fetch developers" };

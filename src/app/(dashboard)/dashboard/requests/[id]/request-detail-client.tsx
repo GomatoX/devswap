@@ -340,7 +340,7 @@ export function RequestDetailClient({
         {/* Chat Panel */}
         <div className="lg:col-span-2">
           <Card className="h-[600px] flex flex-col">
-            <CardHeader className="pb-3">
+            <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle className="text-lg">Conversation</CardTitle>
@@ -364,7 +364,7 @@ export function RequestDetailClient({
               </div>
             </CardHeader>
             <Separator />
-            <CardContent className="flex-1 overflow-y-auto p-4 space-y-4">
+            <CardContent className="flex-1 -my-6 overflow-y-auto p-4 space-y-4 scrollbar-thin">
               {allMessages.length === 0 ? (
                 <div className="flex items-center justify-center h-full text-muted-foreground">
                   No messages yet. Start the conversation!
@@ -432,9 +432,8 @@ export function RequestDetailClient({
             </CardContent>
             {canMessage && (
               <>
-                <Separator />
                 {/* ToS Warning Banner */}
-                <div className="px-4 py-2 bg-amber-50 dark:bg-amber-950/30 border-b border-amber-200 dark:border-amber-800/50">
+                <div className="px-4 py-2 bg-amber-50 dark:bg-amber-950/30 border-y border-amber-200 dark:border-amber-800/50">
                   <div className="flex items-start gap-2 text-xs text-amber-700 dark:text-amber-300">
                     <Lock className="h-3.5 w-3.5 mt-0.5 shrink-0" />
                     <p>
@@ -445,7 +444,7 @@ export function RequestDetailClient({
                     </p>
                   </div>
                 </div>
-                <div className="p-4">
+                <div className="px-4 py-2">
                   <form
                     onSubmit={(e) => {
                       e.preventDefault();
@@ -806,7 +805,8 @@ export function RequestDetailClient({
             <AlertDialogCancel disabled={updating}>Cancel</AlertDialogCancel>
             <AlertDialogAction
               disabled={updating}
-              onClick={async () => {
+              onClick={async (e) => {
+                e.preventDefault();
                 if (pendingAction) {
                   await handleStatusUpdate(pendingAction.status);
                   setPendingAction(null);

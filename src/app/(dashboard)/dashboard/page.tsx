@@ -133,7 +133,7 @@ export default async function DashboardPage() {
       status: req.status,
       time: req.updatedAt,
     })),
-    ...recentContracts.map((contract) => ({
+    ...recentContracts.map((contract: (typeof recentContracts)[number]) => ({
       id: contract.id,
       type: "contract" as const,
       title: contract.title,

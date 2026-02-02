@@ -111,7 +111,7 @@ export function BillingClient({
       {/* Beta Mode Banner */}
       {subscriptionStatus.isBetaMode && (
         <Card className="border-violet-500/50 bg-gradient-to-r from-violet-500/10 via-purple-500/10 to-fuchsia-500/10">
-          <CardContent className="pt-6">
+          <CardContent>
             <div className="flex items-start gap-4">
               <div className="w-12 h-12 rounded-xl bg-violet-500/20 flex items-center justify-center flex-shrink-0">
                 <Zap className="h-6 w-6 text-violet-600" />
