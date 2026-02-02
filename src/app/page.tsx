@@ -199,9 +199,9 @@ export default async function HomePage() {
                 projects — all in one secure platform.
               </p>
               <div className="mt-10 flex items-center justify-center gap-4">
-                <Link href="/sign-up">
+                <Link href={isSignedIn ? "/dashboard" : "/sign-up"}>
                   <Button size="lg" className="h-12 px-8">
-                    Start Free
+                    {isSignedIn ? "Go to Dashboard" : "Start Free"}
                   </Button>
                 </Link>
                 <Link href="#how-it-works">
@@ -368,9 +368,9 @@ export default async function HomePage() {
                 DevSwap. Get started for free today.
               </p>
               <div className="mt-10">
-                <Link href="/sign-up">
+                <Link href={isSignedIn ? "/dashboard" : "/sign-up"}>
                   <Button size="lg" className="h-12 px-8">
-                    Get Started Free
+                    {isSignedIn ? "Go to Dashboard" : "Get Started Free"}
                   </Button>
                 </Link>
               </div>
@@ -390,15 +390,18 @@ export default async function HomePage() {
               <span className="font-semibold">DevSwap</span>
             </div>
             <nav className="flex gap-6 text-sm text-muted-foreground">
-              <Link href="/terms" className="hover:text-foreground">
+              <span className="text-muted-foreground/60 cursor-not-allowed">
                 Terms of Service
-              </Link>
+              </span>
               <Link href="/privacy" className="hover:text-foreground">
                 Privacy Policy
               </Link>
-              <Link href="/contact" className="hover:text-foreground">
+              <a
+                href="mailto:hello@devswap.io"
+                className="hover:text-foreground"
+              >
                 Contact
-              </Link>
+              </a>
             </nav>
             <p className="text-sm text-muted-foreground">
               © 2026 DevSwap. All rights reserved.
