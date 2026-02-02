@@ -227,6 +227,13 @@ model Request {
   endDate    DateTime
   agreedRate Decimal?
 
+  // Offer details (set when vendor sends offer)
+  offeredRate      Decimal?   @db.Decimal(10, 2)
+  offeredStartDate DateTime?
+  offeredEndDate   DateTime?
+  offerNotes       String?    @db.Text
+  offerSentAt      DateTime?
+
   conversation   Conversation?
   contract       Contract?
   timesheets     Timesheet[]
@@ -324,6 +331,10 @@ model Contract {
   status       ContractStatus @default(DRAFT)
   sentAt       DateTime?
   acceptedAt   DateTime?
+  
+  // Signing ("I Agree" timestamps)
+  vendorAgreedAt DateTime?
+  clientAgreedAt DateTime?
   
   timesheets   Timesheet[]
   invoices     Invoice[]

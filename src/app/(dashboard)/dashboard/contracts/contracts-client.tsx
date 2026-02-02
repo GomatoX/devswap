@@ -46,12 +46,16 @@ import {
   Clock,
   FileText,
   Building2,
+  Pencil,
+  Check,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
   createContract,
   updateContractStatus,
   getRequestsWithoutContracts,
+  agreeToContract,
+  updateContract,
 } from "./actions";
 
 type Contract = {
@@ -65,6 +69,8 @@ type Contract = {
   status: string;
   sentAt: Date | string | null;
   acceptedAt: Date | string | null;
+  vendorAgreedAt: Date | string | null;
+  clientAgreedAt: Date | string | null;
   createdAt: Date | string;
   request: {
     id: string;
@@ -183,6 +189,72 @@ export function ContractsClient({
     }
   };
 
+  const [agreeingId, setAgreeingId] = useState<string | null>(null);
+  const handleAgree = async (contractId: string) => {
+    setAgreeingId(contractId);
+    const result = await agreeToContract(contractId);
+    if (result.success) {
+      if (result.fullyAgreed) {
+        toast.success("Both parties agreed! Contract is now active.");
+      } else {
+        toast.success("You agreed to the contract. Waiting for other party.");
+      }
+      router.refresh();
+    } else {
+      toast.error(result.error || "Failed to agree to contract");
+    }
+    setAgreeingId(null);
+  };
+
+  // Edit contract state
+  const [editOpen, setEditOpen] = useState(false);
+  const [editingContract, setEditingContract] = useState<Contract | null>(null);
+  const [editData, setEditData] = useState({
+    title: "",
+    terms: "",
+    hourlyRate: "",
+    startDate: "",
+    endDate: "",
+  });
+
+  const handleOpenEdit = (contract: Contract) => {
+    setEditingContract(contract);
+    setEditData({
+      title: contract.title,
+      terms: contract.terms,
+      hourlyRate: String(contract.hourlyRate),
+      startDate: format(new Date(contract.startDate), "yyyy-MM-dd"),
+      endDate: contract.endDate
+        ? format(new Date(contract.endDate), "yyyy-MM-dd")
+        : "",
+    });
+    setEditOpen(true);
+  };
+
+  const handleEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingContract) return;
+
+    setLoading(true);
+    const result = await updateContract(editingContract.id, {
+      title: editData.title,
+      terms: editData.terms,
+      hourlyRate: parseFloat(editData.hourlyRate),
+      startDate: editData.startDate,
+      endDate: editData.endDate || null,
+    });
+
+    if (result.success) {
+      toast.success("Contract updated! Both parties need to agree again.");
+      setEditOpen(false);
+      setEditingContract(null);
+      router.refresh();
+    } else {
+      toast.error(result.error || "Failed to update contract");
+    }
+    setLoading(false);
+  };
+
   const selectedRequest = availableRequests.find(
     (r) => r.id === formData.requestId,
   );
@@ -262,6 +334,14 @@ export function ContractsClient({
                             Send to {isVendor ? "Client" : "Vendor"}
                           </DropdownMenuItem>
                         )}
+                        {contract.status === "DRAFT" && (
+                          <DropdownMenuItem
+                            onClick={() => handleOpenEdit(contract)}
+                          >
+                            <Pencil className="mr-2 h-4 w-4" />
+                            Edit Contract
+                          </DropdownMenuItem>
+                        )}
                         {contract.status === "SENT" && !isVendor && (
                           <DropdownMenuItem
                             onClick={() =>
@@ -325,6 +405,45 @@ export function ContractsClient({
                       </p>
                     </div>
                   </div>
+
+                  {/* Agreement Status + I Agree Button for DRAFT */}
+                  {contract.status === "DRAFT" && (
+                    <div className="mt-4 pt-4 border-t flex items-center justify-between">
+                      <div className="flex items-center gap-4 text-sm">
+                        <span className="flex items-center gap-1.5">
+                          {contract.vendorAgreedAt ? (
+                            <Check className="h-4 w-4 text-green-500" />
+                          ) : (
+                            <Clock className="h-4 w-4 text-muted-foreground" />
+                          )}
+                          Vendor{" "}
+                          {contract.vendorAgreedAt ? "agreed" : "pending"}
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                          {contract.clientAgreedAt ? (
+                            <Check className="h-4 w-4 text-green-500" />
+                          ) : (
+                            <Clock className="h-4 w-4 text-muted-foreground" />
+                          )}
+                          Client{" "}
+                          {contract.clientAgreedAt ? "agreed" : "pending"}
+                        </span>
+                      </div>
+                      {((isVendor && !contract.vendorAgreedAt) ||
+                        (!isVendor && !contract.clientAgreedAt)) && (
+                        <Button
+                          size="sm"
+                          onClick={() => handleAgree(contract.id)}
+                          disabled={agreeingId === contract.id}
+                        >
+                          <Check className="mr-2 h-4 w-4" />
+                          {agreeingId === contract.id
+                            ? "Processing..."
+                            : "I Agree"}
+                        </Button>
+                      )}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             );
@@ -459,6 +578,98 @@ export function ContractsClient({
               </Button>
               <Button type="submit" disabled={loading}>
                 {loading ? "Creating..." : "Create Contract"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Contract Dialog */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit Contract</DialogTitle>
+            <DialogDescription>
+              Update contract terms. Both parties will need to re-agree after
+              changes.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleEdit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="editTitle">Contract Title *</Label>
+              <Input
+                id="editTitle"
+                value={editData.title}
+                onChange={(e) =>
+                  setEditData({ ...editData, title: e.target.value })
+                }
+                required
+              />
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="editStartDate">Start Date *</Label>
+                <Input
+                  id="editStartDate"
+                  type="date"
+                  value={editData.startDate}
+                  onChange={(e) =>
+                    setEditData({ ...editData, startDate: e.target.value })
+                  }
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="editEndDate">End Date</Label>
+                <Input
+                  id="editEndDate"
+                  type="date"
+                  value={editData.endDate}
+                  onChange={(e) =>
+                    setEditData({ ...editData, endDate: e.target.value })
+                  }
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="editHourlyRate">Hourly Rate (€) *</Label>
+              <Input
+                id="editHourlyRate"
+                type="number"
+                min="1"
+                value={editData.hourlyRate}
+                onChange={(e) =>
+                  setEditData({ ...editData, hourlyRate: e.target.value })
+                }
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="editTerms">Terms & Conditions</Label>
+              <Textarea
+                id="editTerms"
+                rows={4}
+                value={editData.terms}
+                onChange={(e) =>
+                  setEditData({ ...editData, terms: e.target.value })
+                }
+              />
+            </div>
+
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setEditOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={loading}>
+                {loading ? "Saving..." : "Save Changes"}
               </Button>
             </DialogFooter>
           </form>

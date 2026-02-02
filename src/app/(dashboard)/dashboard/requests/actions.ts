@@ -334,6 +334,137 @@ export async function updateRequestStatus(id: string, status: RequestStatus) {
   }
 }
 
+// Validation schema for offer
+const sendOfferSchema = z.object({
+  requestId: z.string().uuid("Invalid request"),
+  offeredRate: z.number().positive("Rate must be positive"),
+  offeredStartDate: z.string().transform((s) => new Date(s)),
+  offeredEndDate: z.string().transform((s) => new Date(s)),
+  offerNotes: z.string().optional(),
+});
+
+export type SendOfferInput = z.input<typeof sendOfferSchema>;
+
+// SEND OFFER: Vendor sends offer with rate and dates
+export async function sendOffer(input: SendOfferInput) {
+  try {
+    const { company } = await getCurrentUserAndCompany();
+    const data = sendOfferSchema.parse(input);
+
+    // Verify vendor access
+    const existing = await prisma.request.findFirst({
+      where: {
+        id: data.requestId,
+        vendorId: company.id,
+        status: { in: ["PENDING", "NEGOTIATING"] },
+      },
+      include: {
+        client: { include: { users: true } },
+      },
+    });
+
+    if (!existing) {
+      return {
+        success: false,
+        error: "Request not found or not in valid state",
+      };
+    }
+
+    // Update request with offer details
+    const request = await prisma.request.update({
+      where: { id: data.requestId },
+      data: {
+        status: "OFFER_SENT",
+        offeredRate: data.offeredRate,
+        offeredStartDate: data.offeredStartDate,
+        offeredEndDate: data.offeredEndDate,
+        offerNotes: data.offerNotes || null,
+        offerSentAt: new Date(),
+      },
+    });
+
+    // Notify client
+    if (existing.client.users.length > 0) {
+      await prisma.notification.createMany({
+        data: existing.client.users.map((u) => ({
+          userId: u.id,
+          title: "Offer Received! 📋",
+          message: `${company.name} has sent you an offer for their developer`,
+          link: `/dashboard/requests/${data.requestId}`,
+        })),
+      });
+    }
+
+    revalidatePath("/dashboard/requests");
+    revalidatePath(`/dashboard/requests/${data.requestId}`);
+    return { success: true, data: request };
+  } catch (error) {
+    console.error("Failed to send offer:", error);
+    if (error instanceof z.ZodError) {
+      return { success: false, error: error.issues[0].message };
+    }
+    return { success: false, error: "Failed to send offer" };
+  }
+}
+
+// REVISE OFFER: Vendor can revise offer (rollback to NEGOTIATING)
+export async function reviseOffer(requestId: string) {
+  try {
+    const { company } = await getCurrentUserAndCompany();
+
+    // Verify vendor access and current state
+    const existing = await prisma.request.findFirst({
+      where: {
+        id: requestId,
+        vendorId: company.id,
+        status: "OFFER_SENT",
+      },
+      include: {
+        client: { include: { users: true } },
+      },
+    });
+
+    if (!existing) {
+      return {
+        success: false,
+        error: "Request not found or cannot be revised",
+      };
+    }
+
+    // Clear offer data and return to negotiating
+    const request = await prisma.request.update({
+      where: { id: requestId },
+      data: {
+        status: "NEGOTIATING",
+        offeredRate: null,
+        offeredStartDate: null,
+        offeredEndDate: null,
+        offerNotes: null,
+        offerSentAt: null,
+      },
+    });
+
+    // Notify client
+    if (existing.client.users.length > 0) {
+      await prisma.notification.createMany({
+        data: existing.client.users.map((u) => ({
+          userId: u.id,
+          title: "Offer Revised",
+          message: `${company.name} is revising their offer`,
+          link: `/dashboard/requests/${requestId}`,
+        })),
+      });
+    }
+
+    revalidatePath("/dashboard/requests");
+    revalidatePath(`/dashboard/requests/${requestId}`);
+    return { success: true, data: request };
+  } catch (error) {
+    console.error("Failed to revise offer:", error);
+    return { success: false, error: "Failed to revise offer" };
+  }
+}
+
 // SEND MESSAGE: Add message to conversation
 export async function sendMessage(requestId: string, content: string) {
   try {

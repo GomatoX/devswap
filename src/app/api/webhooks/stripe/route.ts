@@ -54,11 +54,19 @@ export async function POST(req: NextRequest) {
           const listingId = session.metadata?.listingId;
 
           if (requestId && buyerCompanyId) {
-            // Get the request with conversation
+            // Get the request with conversation and listing
             const request = await prisma.request.findUnique({
               where: { id: requestId },
               include: {
                 conversation: true,
+                listing: {
+                  select: {
+                    hourlyRate: true,
+                    developer: {
+                      select: { pseudonym: true },
+                    },
+                  },
+                },
                 vendor: {
                   select: {
                     contactEmail: true,
@@ -75,6 +83,29 @@ export async function POST(req: NextRequest) {
                 where: { id: requestId },
                 data: { status: "ACCEPTED" },
               });
+
+              // 2. Auto-create contract (as DRAFT - both parties must agree)
+              const developerName = request.listing.developer.pseudonym;
+              const hourlyRate = request.offeredRate
+                ? Number(request.offeredRate)
+                : Number(request.listing.hourlyRate);
+              const startDate = request.offeredStartDate || request.startDate;
+              const endDate = request.offeredEndDate || request.endDate;
+
+              await prisma.contract.create({
+                data: {
+                  requestId: request.id,
+                  title: `Engagement: ${developerName}`,
+                  terms: `Standard engagement terms for ${developerName}. Both parties must agree to activate the contract.`,
+                  hourlyRate,
+                  currency: "EUR",
+                  startDate,
+                  endDate,
+                  status: "DRAFT",
+                },
+              });
+
+              console.log(`Auto-created contract for request ${requestId}`);
 
               // 2. Mark listing as BOOKED
               if (listingId) {

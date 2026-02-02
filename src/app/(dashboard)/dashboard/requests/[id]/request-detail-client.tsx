@@ -40,12 +40,13 @@ import {
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
-import { updateRequestStatus, sendMessage } from "../actions";
+import { updateRequestStatus, sendMessage, reviseOffer } from "../actions";
 import { createMatchmakingCheckout } from "../matchmaking-actions";
 import { formatCurrency } from "@/lib/utils";
 import { TimesheetsPanel } from "../timesheets-panel";
 import { RatingDialog, RatingDisplay } from "../rating-dialog";
 import { useSocket } from "@/hooks/use-socket";
+import { SendOfferDialog } from "./send-offer-dialog";
 
 type Message = {
   id: string;
@@ -73,6 +74,7 @@ type RequestData = {
     logoUrl: string | null;
   };
   listing: {
+    hourlyRate: number | { toString: () => string };
     developer: {
       pseudonym: string;
       title: string;
@@ -144,6 +146,7 @@ export function RequestDetailClient({
     confirmLabel: string;
     variant?: "default" | "destructive";
   } | null>(null);
+  const [offerDialogOpen, setOfferDialogOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -282,6 +285,20 @@ export function RequestDetailClient({
 
   const handleStatusUpdate = async (newStatus: string) => {
     setUpdating(true);
+
+    // Special handling for REVISE_OFFER
+    if (newStatus === "REVISE_OFFER") {
+      const result = await reviseOffer(request.id);
+      if (result.success) {
+        toast.success("Offer withdrawn. You can now send a new offer.");
+        router.refresh();
+      } else {
+        toast.error(result.error || "Failed to revise offer");
+      }
+      setUpdating(false);
+      return;
+    }
+
     const result = await updateRequestStatus(request.id, newStatus as never);
     if (result.success) {
       toast.success(`Request ${newStatus.toLowerCase()}`);
@@ -579,14 +596,7 @@ export function RequestDetailClient({
                   <>
                     <Button
                       className="w-full"
-                      onClick={() =>
-                        setPendingAction({
-                          status: "OFFER_SENT",
-                          title: "Accept & Create Offer",
-                          description: `Create an offer for ${request.counterparty.name}. They will need to pay the matchmaking fee (€${matchmakingFee}) to finalize the deal and unlock your contact information.`,
-                          confirmLabel: "Send Offer",
-                        })
-                      }
+                      onClick={() => setOfferDialogOpen(true)}
                       disabled={updating}
                     >
                       Accept & Create Offer
@@ -612,19 +622,36 @@ export function RequestDetailClient({
 
                 {/* Vendor waiting message when offer is sent */}
                 {isVendor && request.status === "OFFER_SENT" && (
-                  <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-4 border border-blue-200 dark:border-blue-800/50">
-                    <div className="flex items-start gap-3">
-                      <Clock className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" />
-                      <div>
-                        <p className="font-medium text-blue-900 dark:text-blue-100">
-                          Offer sent!
-                        </p>
-                        <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
-                          Waiting for {request.counterparty.name} to pay the
-                          matchmaking fee and finalize the deal.
-                        </p>
+                  <div className="space-y-3">
+                    <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-4 border border-blue-200 dark:border-blue-800/50">
+                      <div className="flex items-start gap-3">
+                        <Clock className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" />
+                        <div>
+                          <p className="font-medium text-blue-900 dark:text-blue-100">
+                            Offer sent!
+                          </p>
+                          <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
+                            Waiting for {request.counterparty.name} to pay the
+                            matchmaking fee and finalize the deal.
+                          </p>
+                        </div>
                       </div>
                     </div>
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={() =>
+                        setPendingAction({
+                          status: "REVISE_OFFER",
+                          title: "Revise Offer",
+                          description: `This will return the request to negotiating status and clear the current offer, allowing you to send a new offer.`,
+                          confirmLabel: "Revise Offer",
+                        })
+                      }
+                      disabled={updating}
+                    >
+                      Revise Offer
+                    </Button>
                   </div>
                 )}
 
@@ -796,6 +823,18 @@ export function RequestDetailClient({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Send Offer Dialog */}
+      <SendOfferDialog
+        open={offerDialogOpen}
+        onOpenChange={setOfferDialogOpen}
+        requestId={request.id}
+        defaultRate={Number(request.listing.hourlyRate)}
+        defaultStartDate={request.startDate}
+        defaultEndDate={request.endDate}
+        counterpartyName={request.counterparty.name}
+        matchmakingFee={matchmakingFee}
+      />
     </div>
   );
 }
