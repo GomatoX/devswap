@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useTransition } from "react";
+import { useState, useEffect, useTransition, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -34,20 +34,21 @@ export function NotificationDropdown() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [isPending, startTransition] = useTransition();
 
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
     const result = await getNotifications();
     if (result.success && result.data) {
       setNotifications(result.data);
       setUnreadCount(result.unreadCount || 0);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    fetchNotifications();
+    // Initial fetch
+    void fetchNotifications();
     // Poll for new notifications every 30 seconds
-    const interval = setInterval(fetchNotifications, 30000);
+    const interval = setInterval(() => void fetchNotifications(), 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchNotifications]);
 
   const handleMarkAsRead = (
     e: React.MouseEvent,

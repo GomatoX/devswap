@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
   Dialog,
@@ -52,7 +52,8 @@ export function EditListingDialog({
 }: EditListingDialogProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({
+
+  const getFormData = () => ({
     availableFrom: formatDateForInput(listing.availableFrom),
     availableTo: formatDateForInput(listing.availableTo),
     hourlyRate:
@@ -64,21 +65,15 @@ export function EditListingDialog({
     status: listing.status,
   });
 
-  useEffect(() => {
-    if (open) {
-      setFormData({
-        availableFrom: formatDateForInput(listing.availableFrom),
-        availableTo: formatDateForInput(listing.availableTo),
-        hourlyRate:
-          typeof listing.hourlyRate === "number"
-            ? listing.hourlyRate
-            : parseFloat(listing.hourlyRate.toString()),
-        workType: listing.workType,
-        minDuration: listing.minDuration,
-        status: listing.status,
-      });
+  const [formData, setFormData] = useState(getFormData);
+
+  // Reset form when dialog opens with new data
+  const handleOpenChange = (newOpen: boolean) => {
+    if (newOpen) {
+      setFormData(getFormData());
     }
-  }, [open, listing]);
+    onOpenChange(newOpen);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -108,7 +103,7 @@ export function EditListingDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>Edit Listing</DialogTitle>

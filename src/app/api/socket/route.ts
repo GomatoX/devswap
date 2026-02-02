@@ -1,8 +1,4 @@
-import { Server } from "socket.io";
 import { NextRequest, NextResponse } from "next/server";
-
-// Global socket.io server instance
-let io: Server | undefined;
 
 export const dynamic = "force-dynamic";
 

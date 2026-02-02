@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
   Dialog,
@@ -22,7 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { updateDeveloper, getDeveloper } from "./actions";
+import { updateDeveloper } from "./actions";
 
 type Developer = {
   id: string;
@@ -53,18 +53,26 @@ export function EditDeveloperDialog({
 }: EditDeveloperDialogProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    realName: developer.realName,
-    pseudonym: developer.pseudonym,
-    title: developer.title,
-    level: developer.level,
-    bio: developer.bio || "",
-    photoUrl: developer.photoUrl || "",
-    cvUrl: developer.cvUrl || "",
-  });
 
-  useEffect(() => {
-    if (open) {
+  // Compute initial form data based on developer prop
+  const initialFormData = useMemo(
+    () => ({
+      realName: developer.realName,
+      pseudonym: developer.pseudonym,
+      title: developer.title,
+      level: developer.level,
+      bio: developer.bio || "",
+      photoUrl: developer.photoUrl || "",
+      cvUrl: developer.cvUrl || "",
+    }),
+    [developer],
+  );
+
+  const [formData, setFormData] = useState(initialFormData);
+
+  // Reset form when dialog opens with new data
+  const handleOpenChange = (newOpen: boolean) => {
+    if (newOpen) {
       setFormData({
         realName: developer.realName,
         pseudonym: developer.pseudonym,
@@ -75,7 +83,8 @@ export function EditDeveloperDialog({
         cvUrl: developer.cvUrl || "",
       });
     }
-  }, [open, developer]);
+    onOpenChange(newOpen);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -107,7 +116,7 @@ export function EditDeveloperDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>Edit Developer</DialogTitle>

@@ -15,13 +15,6 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Sheet,
   SheetContent,
   SheetHeader,
@@ -82,89 +75,20 @@ type Filters = {
 const LEVEL_OPTIONS = ["Junior", "Mid", "Senior", "Lead", "Principal"];
 const WORK_TYPE_OPTIONS = ["Full-time", "Part-time", "Contract", "Flexible"];
 
-export function MarketplaceClient({
-  initialListings,
-  currentCompanyId,
+// Filter Panel Component - defined outside to avoid recreating on each render
+function FilterPanel({
+  filters,
+  setFilters,
+  hasActiveFilters,
+  clearFilters,
 }: {
-  initialListings: MarketplaceListing[];
-  currentCompanyId?: string;
+  filters: Filters;
+  setFilters: (filters: Filters) => void;
+  hasActiveFilters: boolean;
+  clearFilters: () => void;
 }) {
-  const [listings] = useState(initialListings);
-  const [filters, setFilters] = useState<Filters>({
-    search: "",
-    workType: "",
-    level: "",
-    minRate: "",
-    maxRate: "",
-  });
-
-  // Client-side filtering for instant feedback
-  const filteredListings = listings.filter((listing) => {
-    const rate =
-      typeof listing.hourlyRate === "number"
-        ? listing.hourlyRate
-        : parseFloat(listing.hourlyRate.toString());
-
-    // Search filter
-    if (filters.search) {
-      const searchLower = filters.search.toLowerCase();
-      const matchesSearch =
-        listing.developer.pseudonym.toLowerCase().includes(searchLower) ||
-        listing.developer.title.toLowerCase().includes(searchLower) ||
-        listing.developer.skills.some((s) =>
-          s.skill.name.toLowerCase().includes(searchLower),
-        );
-      if (!matchesSearch) return false;
-    }
-
-    // Work type filter
-    if (filters.workType && listing.workType !== filters.workType) {
-      return false;
-    }
-
-    // Level filter
-    if (filters.level && listing.developer.level !== filters.level) {
-      return false;
-    }
-
-    // Rate filters
-    if (filters.minRate && rate < parseFloat(filters.minRate)) {
-      return false;
-    }
-    if (filters.maxRate && rate > parseFloat(filters.maxRate)) {
-      return false;
-    }
-
-    return true;
-  });
-
-  const clearFilters = () => {
-    setFilters({
-      search: "",
-      workType: "",
-      level: "",
-      minRate: "",
-      maxRate: "",
-    });
-  };
-
-  const hasActiveFilters =
-    filters.search ||
-    filters.workType ||
-    filters.level ||
-    filters.minRate ||
-    filters.maxRate;
-
-  const activeFilterCount = [
-    filters.workType,
-    filters.level,
-    filters.minRate,
-    filters.maxRate,
-  ].filter(Boolean).length;
-
-  // Filter Panel Component (reused for sidebar and mobile sheet)
-  const FilterPanel = ({ className = "" }: { className?: string }) => (
-    <div className={`space-y-6 ${className}`}>
+  return (
+    <div className="space-y-6">
       {/* Work Type */}
       <div className="space-y-3">
         <Label className="text-sm font-medium">Work Type</Label>
@@ -255,6 +179,87 @@ export function MarketplaceClient({
       )}
     </div>
   );
+}
+
+export function MarketplaceClient({
+  initialListings,
+  currentCompanyId,
+}: {
+  initialListings: MarketplaceListing[];
+  currentCompanyId?: string;
+}) {
+  const [listings] = useState(initialListings);
+  const [filters, setFilters] = useState<Filters>({
+    search: "",
+    workType: "",
+    level: "",
+    minRate: "",
+    maxRate: "",
+  });
+
+  // Client-side filtering for instant feedback
+  const filteredListings = listings.filter((listing) => {
+    const rate =
+      typeof listing.hourlyRate === "number"
+        ? listing.hourlyRate
+        : parseFloat(listing.hourlyRate.toString());
+
+    // Search filter
+    if (filters.search) {
+      const searchLower = filters.search.toLowerCase();
+      const matchesSearch =
+        listing.developer.pseudonym.toLowerCase().includes(searchLower) ||
+        listing.developer.title.toLowerCase().includes(searchLower) ||
+        listing.developer.skills.some((s) =>
+          s.skill.name.toLowerCase().includes(searchLower),
+        );
+      if (!matchesSearch) return false;
+    }
+
+    // Work type filter
+    if (filters.workType && listing.workType !== filters.workType) {
+      return false;
+    }
+
+    // Level filter
+    if (filters.level && listing.developer.level !== filters.level) {
+      return false;
+    }
+
+    // Rate filters
+    if (filters.minRate && rate < parseFloat(filters.minRate)) {
+      return false;
+    }
+    if (filters.maxRate && rate > parseFloat(filters.maxRate)) {
+      return false;
+    }
+
+    return true;
+  });
+
+  const clearFilters = () => {
+    setFilters({
+      search: "",
+      workType: "",
+      level: "",
+      minRate: "",
+      maxRate: "",
+    });
+  };
+
+  const hasActiveFilters =
+    filters.search ||
+    filters.workType ||
+    filters.level ||
+    filters.minRate ||
+    filters.maxRate;
+
+  const activeFilterCount = [
+    filters.workType,
+    filters.level,
+    filters.minRate,
+    filters.maxRate,
+  ].filter(Boolean).length;
 
   return (
     <div className="flex gap-8">
@@ -269,7 +274,12 @@ export function MarketplaceClient({
               </Badge>
             )}
           </div>
-          <FilterPanel />
+          <FilterPanel
+            filters={filters}
+            setFilters={setFilters}
+            hasActiveFilters={!!hasActiveFilters}
+            clearFilters={clearFilters}
+          />
         </div>
       </aside>
 
@@ -310,7 +320,12 @@ export function MarketplaceClient({
                 <SheetTitle>Filters</SheetTitle>
               </SheetHeader>
               <div className="mt-6">
-                <FilterPanel />
+                <FilterPanel
+                  filters={filters}
+                  setFilters={setFilters}
+                  hasActiveFilters={!!hasActiveFilters}
+                  clearFilters={clearFilters}
+                />
               </div>
             </SheetContent>
           </Sheet>

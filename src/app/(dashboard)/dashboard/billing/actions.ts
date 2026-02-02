@@ -3,8 +3,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { getStripe, TIER_CONFIG, PRICE_IDS } from "@/lib/stripe";
-import { SubscriptionTier } from "@prisma/client";
+import { getStripe, PRICE_IDS } from "@/lib/stripe";
 
 // Use APP_URL (server-side) or NEXT_PUBLIC_APP_URL as fallback
 const APP_URL =

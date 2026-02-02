@@ -1,23 +1,9 @@
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import {
-  Users,
-  FileText,
-  ExternalLink,
-  Trash2,
-  AlertCircle,
-  Settings,
-} from "lucide-react";
+import { Users, FileText, AlertCircle, Settings } from "lucide-react";
 import { getDevelopers } from "./actions";
 import { getListings } from "../market/actions";
 import { isCompanyProfileComplete } from "../settings/actions";

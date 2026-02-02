@@ -26,11 +26,7 @@ import {
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { updateCompanyProfile } from "./actions";
-import {
-  getAllCountries,
-  PRIORITY_COUNTRIES,
-  getCountryName,
-} from "@/lib/constants/countries";
+import { getAllCountries, PRIORITY_COUNTRIES } from "@/lib/constants/countries";
 
 type Company = {
   id: string;

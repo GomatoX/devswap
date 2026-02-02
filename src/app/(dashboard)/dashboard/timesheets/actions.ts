@@ -3,8 +3,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { TimesheetStatus } from "@prisma/client";
-import { startOfWeek, endOfWeek, addDays } from "date-fns";
+import { endOfWeek } from "date-fns";
 
 async function getCurrentCompany() {
   const { userId } = await auth();

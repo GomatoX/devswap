@@ -29,7 +29,6 @@ import {
   Sparkles,
   CheckCircle2,
   Briefcase,
-  Globe,
   Star,
   Lock,
 } from "lucide-react";
