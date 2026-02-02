@@ -34,6 +34,205 @@ export async function getCompanies(status?: CompanyStatus) {
   }
 }
 
+// GET: Fetch pending companies with full details for verification
+export async function getPendingCompaniesWithDetails() {
+  try {
+    await requireAdmin();
+
+    const companies = await prisma.company.findMany({
+      where: { status: "PENDING_VERIFICATION" },
+      include: {
+        users: {
+          select: {
+            id: true,
+            clerkId: true,
+            fullName: true,
+            email: true,
+            role: true,
+            createdAt: true,
+          },
+        },
+        developers: {
+          include: {
+            skills: { include: { skill: true } },
+            listings: {
+              select: {
+                id: true,
+                status: true,
+                hourlyRate: true,
+                currency: true,
+                workType: true,
+                availableFrom: true,
+                createdAt: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    // Serialize Decimal values
+    const serialized = companies.map((company) => ({
+      ...company,
+      developers: company.developers.map((dev) => ({
+        ...dev,
+        internalRate: dev.internalRate ? Number(dev.internalRate) : null,
+        listings: dev.listings.map((listing) => ({
+          ...listing,
+          hourlyRate: Number(listing.hourlyRate),
+        })),
+      })),
+    }));
+
+    return { success: true, data: serialized };
+  } catch (error) {
+    console.error("Failed to fetch pending companies:", error);
+    return { success: false, error: "Failed to fetch pending companies" };
+  }
+}
+
+// GET: Fetch ALL companies with full details for admin management
+export async function getAllCompaniesWithDetails() {
+  try {
+    await requireAdmin();
+
+    const companies = await prisma.company.findMany({
+      include: {
+        users: {
+          select: {
+            id: true,
+            clerkId: true,
+            fullName: true,
+            email: true,
+            role: true,
+            createdAt: true,
+          },
+        },
+        developers: {
+          include: {
+            skills: { include: { skill: true } },
+            listings: {
+              select: {
+                id: true,
+                status: true,
+                hourlyRate: true,
+                currency: true,
+                workType: true,
+                availableFrom: true,
+                createdAt: true,
+              },
+            },
+          },
+        },
+        _count: {
+          select: {
+            purchases: true,
+            sales: true,
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    // Serialize Decimal values
+    const serialized = companies.map((company) => ({
+      ...company,
+      developers: company.developers.map((dev) => ({
+        ...dev,
+        internalRate: dev.internalRate ? Number(dev.internalRate) : null,
+        listings: dev.listings.map((listing) => ({
+          ...listing,
+          hourlyRate: Number(listing.hourlyRate),
+        })),
+      })),
+    }));
+
+    return { success: true, data: serialized };
+  } catch (error) {
+    console.error("Failed to fetch companies:", error);
+    return { success: false, error: "Failed to fetch companies" };
+  }
+}
+
+// UPDATE: Suspend a listing (admin)
+export async function suspendListing(listingId: string) {
+  try {
+    await requireAdmin();
+
+    await prisma.listing.update({
+      where: { id: listingId },
+      data: { status: "EXPIRED" }, // Use EXPIRED as suspended state
+    });
+
+    revalidatePath("/dashboard/admin/companies");
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to suspend listing:", error);
+    return { success: false, error: "Failed to suspend listing" };
+  }
+}
+
+// UPDATE: Activate a listing (admin)
+export async function activateListing(listingId: string) {
+  try {
+    await requireAdmin();
+
+    await prisma.listing.update({
+      where: { id: listingId },
+      data: { status: "ACTIVE" },
+    });
+
+    revalidatePath("/dashboard/admin/companies");
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to activate listing:", error);
+    return { success: false, error: "Failed to activate listing" };
+  }
+}
+
+// REQUEST: Send notification to company asking for additional info
+export async function requestAdditionalInfo(
+  companyId: string,
+  message: string,
+) {
+  try {
+    await requireAdmin();
+
+    // Get all users of the company (especially admins)
+    const companyUsers = await prisma.user.findMany({
+      where: { companyId },
+      select: { id: true, role: true },
+    });
+
+    if (companyUsers.length === 0) {
+      return { success: false, error: "No users found for this company" };
+    }
+
+    // Send notification to all company admins (or all users if no admin)
+    const admins = companyUsers.filter((u) => u.role === "COMPANY_ADMIN");
+    const targetUsers = admins.length > 0 ? admins : companyUsers;
+
+    await Promise.all(
+      targetUsers.map((user) =>
+        prisma.notification.create({
+          data: {
+            userId: user.id,
+            title: "Additional Information Required",
+            message: message,
+            link: "/dashboard/settings",
+          },
+        }),
+      ),
+    );
+
+    return { success: true, notifiedCount: targetUsers.length };
+  } catch (error) {
+    console.error("Failed to send info request:", error);
+    return { success: false, error: "Failed to send request" };
+  }
+}
+
 // UPDATE: Verify company
 export async function verifyCompany(companyId: string) {
   try {

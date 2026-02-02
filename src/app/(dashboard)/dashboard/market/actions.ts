@@ -89,8 +89,8 @@ export async function getMarketplaceListings(filters?: {
       status: "ACTIVE",
       developer: {
         company: {
-          // Show listings from ACTIVE or PENDING_VERIFICATION companies (including own)
-          status: { in: ["ACTIVE", "PENDING_VERIFICATION"] },
+          // Only show listings from verified (ACTIVE) companies
+          status: "ACTIVE",
         },
       },
     };

@@ -15,6 +15,7 @@ import {
   Clock,
   Receipt,
   DollarSign,
+  Building2,
   LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -44,6 +45,7 @@ const engagementTools: NavItem[] = [
 
 const adminTools: NavItem[] = [
   { name: "Admin Panel", href: "/dashboard/admin", icon: Shield },
+  { name: "Companies", href: "/dashboard/admin/companies", icon: Building2 },
   { name: "Plans", href: "/dashboard/admin/plans", icon: DollarSign },
 ];
 

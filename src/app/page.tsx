@@ -323,7 +323,10 @@ export default async function HomePage() {
                         </li>
                       ))}
                     </ul>
-                    <Link href="/sign-up" className="block">
+                    <Link
+                      href={isSignedIn ? "/dashboard" : "/sign-up"}
+                      className="block"
+                    >
                       <Button
                         className="w-full"
                         variant={tier.popular ? "default" : "outline"}
