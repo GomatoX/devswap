@@ -186,10 +186,6 @@ export function DeveloperFormDialog({
     setSkills(skills.filter((s) => s.name !== skillName));
   };
 
-  const handleSetPrimary = (skillName: string) => {
-    setSkills(skills.map((s) => ({ ...s, isPrimary: s.name === skillName })));
-  };
-
   const handleTogglePrimary = (skillName: string) => {
     setSkills(
       skills.map((s) =>
@@ -607,8 +603,8 @@ export function DeveloperFormDialog({
               </div>
             )}
             <p className="text-xs text-muted-foreground">
-              Check the box to mark skills as "Core Technologies" (highlighted
-              on profile).
+              Check the box to mark skills as &quot;Core Technologies&quot;
+              (highlighted on profile).
             </p>
           </div>
         </div>

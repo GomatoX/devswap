@@ -254,7 +254,7 @@ export function ContractsClient({
     setLoading(false);
   };
 
-  const selectedRequest = availableRequests.find(
+  const _selectedRequest = availableRequests.find(
     (r) => r.id === formData.requestId,
   );
 

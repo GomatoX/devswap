@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(req: NextRequest) {
+export async function GET(_req: NextRequest) {
   // This route is just for the initial HTTP handshake
   // The actual WebSocket upgrade is handled by the custom server
   return NextResponse.json({ status: "Socket.io server ready" });

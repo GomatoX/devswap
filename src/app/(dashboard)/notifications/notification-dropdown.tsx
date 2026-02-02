@@ -44,10 +44,20 @@ export function NotificationDropdown() {
 
   useEffect(() => {
     // Initial fetch
-    void fetchNotifications();
+    let isMounted = true;
+    const doFetch = async () => {
+      if (isMounted) {
+        await fetchNotifications();
+      }
+    };
+    void doFetch();
+
     // Poll for new notifications every 30 seconds
     const interval = setInterval(() => void fetchNotifications(), 30000);
-    return () => clearInterval(interval);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
   }, [fetchNotifications]);
 
   const handleMarkAsRead = (

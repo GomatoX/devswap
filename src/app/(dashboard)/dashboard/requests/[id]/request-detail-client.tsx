@@ -157,7 +157,7 @@ export function RequestDetailClient({
   // Socket.io integration for real-time chat
   const {
     isConnected,
-    typingUsers,
+    typingUsers: _typingUsers,
     onNewMessage,
     emitMessage,
     emitTyping,

@@ -33,7 +33,6 @@ import {
   MoreVertical,
   CheckCircle,
   XCircle,
-  Clock,
   TrendingUp,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -314,10 +313,6 @@ function CompanyTable({
         {companies.map((company) => {
           const status =
             statusConfig[company.status] || statusConfig.PENDING_VERIFICATION;
-          const totalActivity =
-            company._count.developers +
-            company._count.purchases +
-            company._count.sales;
 
           return (
             <TableRow key={company.id}>

@@ -125,7 +125,7 @@ export default async function DashboardPage() {
   };
 
   const activities: ActivityItem[] = [
-    ...recentRequests.map((req) => ({
+    ...recentRequests.map((req: (typeof recentRequests)[number]) => ({
       id: req.id,
       type: "request" as const,
       title: `Request: ${req.listing.developer.pseudonym}`,

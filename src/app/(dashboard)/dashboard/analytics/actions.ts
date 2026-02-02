@@ -2,7 +2,6 @@
 
 import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
-import { subDays, startOfDay, endOfDay } from "date-fns";
 
 async function getCurrentCompany() {
   const { userId } = await auth();
@@ -20,7 +19,6 @@ async function getCurrentCompany() {
 export async function getAnalyticsData() {
   try {
     const company = await getCurrentCompany();
-    const thirtyDaysAgo = subDays(new Date(), 30);
 
     // Get company's developers and listings
     const developers = await prisma.developer.findMany({
